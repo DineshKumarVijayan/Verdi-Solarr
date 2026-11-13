@@ -1,0 +1,5 @@
+# Copy to .dev.vars for LOCAL development only. Never commit .dev.vars.
+ENVIRONMENT=development
+# Local-only admin identity. Honoured ONLY when ENVIRONMENT=development AND the request host is localhost/127.0.0.1.
+DEV_ADMIN_EMAIL=Verdisolarrsolution@gmail.com
+ADMIN_ALLOWED_HOSTS=localhost,127.0.0.1
