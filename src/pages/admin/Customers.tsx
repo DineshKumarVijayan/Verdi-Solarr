@@ -1,0 +1,257 @@
+import { Award, ClipboardCopy, KeyRound, Search } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router";
+import { formatMobile } from "../../../shared/admin-schemas";
+import { formatPaise } from "../../../shared/money";
+import type { AdminCustomerRow, EnquiryView, RewardEntry } from "../../../shared/types";
+import { Modal, Spinner, useToast } from "../../components/ui";
+import { WhatsAppIcon } from "../../components/WhatsAppIcon";
+import { api } from "../../lib/api";
+import { STATUS_LABEL, STATUS_STYLE } from "../../lib/enquiry-status";
+import { useAdmin } from "./AdminLayout";
+import { canManage, dt, errorText, PageHead, send, Toggle } from "./kit";
+
+interface Detail {
+  customer: AdminCustomerRow;
+  enquiries: EnquiryView[];
+  rewards: RewardEntry[];
+}
+
+export default function Customers() {
+  const [params, setParams] = useSearchParams();
+  const [rows, setRows] = useState<AdminCustomerRow[] | null>(null);
+  const [q, setQ] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const openId = Number(params.get("open")) || null;
+
+  const load = useCallback((query = "") => {
+    api<{ rows: AdminCustomerRow[] }>(`/api/admin/customers?q=${encodeURIComponent(query)}`)
+      .then((r) => setRows(r.rows))
+      .catch((e) => setError(errorText(e)));
+  }, []);
+  useEffect(() => load(), [load]);
+
+  const setOpen = (id: number | null) =>
+    setParams(
+      (p) => {
+        const n = new URLSearchParams(p);
+        if (id) n.set("open", String(id));
+        else n.delete("open");
+        return n;
+      },
+      { replace: true },
+    );
+
+  return (
+    <div className="container-x py-10">
+      <PageHead title="Customers" intro="Customer accounts are separate from staff access. Customers sign in with their mobile number and a password; passwords are stored only as salted hashes." />
+      <div className="relative mt-6 max-w-md">
+        <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-subtle" />
+        <input aria-label="Search customers" className="field !rounded-full pl-10" placeholder="Name, mobile, email or business" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && load(q.trim())} />
+      </div>
+      {error && <p className="mt-6 rounded-xl bg-danger-bg p-3 text-sm text-danger">{error}</p>}
+      {!rows ? (
+        <div className="mt-10 flex justify-center">
+          <Spinner />
+        </div>
+      ) : rows.length === 0 ? (
+        <p className="mt-10 text-center text-muted">No customer accounts yet.</p>
+      ) : (
+        <div className="card mt-6 overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="border-b border-line text-xs text-muted">
+              <tr>
+                <th className="p-3 font-medium">Customer</th>
+                <th className="p-3 font-medium">Mobile</th>
+                <th className="p-3 text-right font-medium">Enquiries</th>
+                <th className="p-3 text-right font-medium">Points</th>
+                <th className="p-3 font-medium">Joined</th>
+                <th className="p-3 font-medium">Last sign-in</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((c) => (
+                <tr key={c.id} className="cursor-pointer border-b border-line/60 last:border-0 hover:bg-paper" onClick={() => setOpen(c.id)} data-testid="admin-customer-row">
+                  <td className="p-3">
+                    <button type="button" className="text-left font-semibold hover:underline">
+                      {c.name}
+                    </button>
+                    {!c.isActive && <span className="ml-2 rounded-full bg-paper-3 px-2 py-0.5 text-[10px] text-muted">disabled</span>}
+                    <p className="text-xs text-muted">{[c.business, c.city].filter(Boolean).join(" · ")}</p>
+                  </td>
+                  <td className="num p-3">{formatMobile(c.mobile)}</td>
+                  <td className="num p-3 text-right">{c.enquiries}</td>
+                  <td className="num p-3 text-right font-semibold">{c.points.toLocaleString("en-IN")}</td>
+                  <td className="p-3 text-xs text-muted">{dt(c.createdAt)}</td>
+                  <td className="p-3 text-xs text-muted">{dt(c.lastLoginAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {openId && <CustomerModal id={openId} onClose={() => setOpen(null)} onChanged={() => load(q.trim())} />}
+    </div>
+  );
+}
+
+function CustomerModal({ id, onClose, onChanged }: { id: number; onClose: () => void; onChanged: () => void }) {
+  const admin = useAdmin();
+  const editable = canManage(admin);
+  const toast = useToast();
+  const [d, setD] = useState<Detail | null>(null);
+  const [pts, setPts] = useState("");
+  const [reason, setReason] = useState("");
+  const [link, setLink] = useState<{ url: string; expiresAt: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api<Detail>(`/api/admin/customers/${id}`)
+      .then(setD)
+      .catch((e) => toast(errorText(e), "error"));
+  }, [id, toast]);
+
+  const act = async (fn: () => Promise<Detail>, msg: string) => {
+    setBusy(true);
+    try {
+      setD(await fn());
+      onChanged();
+      toast(msg, "success");
+      return true;
+    } catch (e) {
+      toast(errorText(e), "error");
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const c = d?.customer;
+  return (
+    <Modal open onClose={onClose} title={c?.name ?? "Customer"} size="lg" fullscreenOnMobile>
+      {!d || !c ? (
+        <div className="flex justify-center p-10">
+          <Spinner />
+        </div>
+      ) : (
+        <div className="grid gap-5 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="text-sm">
+              <p className="num">{formatMobile(c.mobile)}</p>
+              <p className="text-muted">{[c.email, c.business, c.city].filter(Boolean).join(" · ") || "—"}</p>
+              <p className="mt-1 text-xs text-subtle">
+                Joined {dt(c.createdAt)} · last sign-in {dt(c.lastLoginAt)}
+              </p>
+            </div>
+            {editable && <Toggle id="cu-active" checked={c.isActive} onChange={(v) => act(() => send(`/api/admin/customers/${id}`, "PUT", { isActive: v }), v ? "Account enabled." : "Account disabled and signed out.")} label="Account enabled" />}
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <section className="rounded-2xl bg-ink p-4 text-paper">
+              <p className="flex items-center gap-1.5 text-sm font-semibold">
+                <Award className="size-4 text-sun-300" /> Reward points
+              </p>
+              <p className="num mt-1 text-4xl font-semibold" data-testid="admin-points">
+                {c.points.toLocaleString("en-IN")}
+              </p>
+              {editable && (
+                <form
+                  className="mt-3 grid gap-2"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const ok = await act(() => send(`/api/admin/customers/${id}/points`, "POST", { points: Number(pts), reason }), "Points updated.");
+                    if (ok) {
+                      setPts("");
+                      setReason("");
+                    }
+                  }}
+                >
+                  <div className="flex gap-2">
+                    <input aria-label="Points to add or remove" inputMode="numeric" className="field num !py-1.5 text-ink" placeholder="+500 or -200" value={pts} onChange={(e) => setPts(e.target.value.replace(/[^\d-]/g, ""))} />
+                    <button type="submit" className="btn-sun btn-sm shrink-0" disabled={busy || !pts || !reason.trim()}>
+                      Apply
+                    </button>
+                  </div>
+                  <input aria-label="Reason" className="field !py-1.5 text-ink" placeholder="Reason (shown to the customer)" value={reason} onChange={(e) => setReason(e.target.value)} />
+                </form>
+              )}
+              {d.rewards.length > 0 && (
+                <ul className="mt-3 grid max-h-40 gap-1.5 overflow-auto border-t border-white/10 pt-2 text-xs">
+                  {d.rewards.map((r) => (
+                    <li key={r.id} className="flex justify-between gap-2">
+                      <span className="truncate">{r.reason}</span>
+                      <span className={`num shrink-0 ${r.points > 0 ? "text-verdi-300" : "text-sun-300"}`}>
+                        {r.points > 0 ? "+" : ""}
+                        {r.points}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section className="rounded-2xl border border-line p-4">
+              <p className="flex items-center gap-1.5 text-sm font-semibold">
+                <KeyRound className="size-4 text-verdi-600" /> Password reset
+              </p>
+              <p className="mt-1 text-xs text-muted">Creates a one-time link valid for 48 hours. Send it to the customer on WhatsApp. Any older link stops working.</p>
+              {editable && (
+                <button
+                  type="button"
+                  className="btn-ghost btn-sm mt-3"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    try {
+                      setLink(await send(`/api/admin/customers/${id}/reset-link`, "POST"));
+                    } catch (e) {
+                      toast(errorText(e), "error");
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  Create reset link
+                </button>
+              )}
+              {link && (
+                <div className="mt-3 grid gap-2">
+                  <input readOnly aria-label="Reset link" className="field !py-1.5 text-xs" value={link.url} onFocus={(e) => e.target.select()} />
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" className="btn-ghost btn-sm" onClick={() => navigator.clipboard.writeText(link.url).then(() => toast("Copied", "success"))}>
+                      <ClipboardCopy className="size-3.5" /> Copy
+                    </button>
+                    <a className="btn-primary btn-sm" target="_blank" rel="noopener" href={`https://wa.me/${c.mobile}?text=${encodeURIComponent(`Hello ${c.name}, here is your VERDI SOLARR password reset link (valid for 48 hours): ${link.url}`)}`}>
+                      <WhatsAppIcon className="size-3.5" /> Send on WhatsApp
+                    </a>
+                  </div>
+                </div>
+              )}
+            </section>
+          </div>
+
+          <section>
+            <h3 className="font-semibold">Enquiries ({d.enquiries.length})</h3>
+            {d.enquiries.length === 0 ? (
+              <p className="mt-2 text-sm text-muted">None yet.</p>
+            ) : (
+              <ul className="mt-2 grid gap-2">
+                {d.enquiries.map((e) => (
+                  <li key={e.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-paper p-3 text-sm">
+                    <Link to={`/admin/enquiries?q=${e.reference}`} className="num font-semibold hover:underline">
+                      {e.reference}
+                    </Link>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLE[e.status]}`}>{STATUS_LABEL[e.status]}</span>
+                    <span className="min-w-0 flex-1 truncate text-muted">{e.items.map((i) => `${i.quantity}× ${i.name}`).join(", ")}</span>
+                    <span className="num">{e.totalPaise != null ? formatPaise(e.totalPaise) : "—"}</span>
+                    <span className="text-xs text-subtle">{dt(e.createdAt)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+      )}
+    </Modal>
+  );
+}

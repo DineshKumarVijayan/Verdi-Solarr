@@ -12,7 +12,10 @@ import { api, ApiError } from "../lib/api";
 import { useBasket } from "../lib/basket";
 import { useCatalogue } from "../lib/catalogue";
 import { usePageMeta } from "../lib/seo";
+import { useAccount } from "../lib/account";
+import { useSite } from "../lib/site";
 import { readStore, writeStore } from "../lib/storage";
+import { formatMobile } from "../../shared/admin-schemas";
 
 const CUSTOMER_KEY = "verdi.customer.v1";
 type Errors = Partial<Record<keyof EnquiryCustomer, string>>;
@@ -29,6 +32,36 @@ export default function Enquiry() {
   const [verified, setVerified] = useState<{ items: Map<number, RevalidatedItem>; checkedAt: string } | null>(null);
   const [preview, setPreview] = useState<{ message: string; verified: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
+  const { customer: account } = useAccount();
+  const SITE = useSite();
+  // The last enquiry saved to our records, so re-opening the same preview doesn't create duplicates.
+  const [recorded, setRecorded] = useState<{ key: string; reference: string } | null>(null);
+
+  // Signed-in customers: pre-fill empty fields from their profile.
+  useEffect(() => {
+    if (!account) return;
+    setCustomer((c) => ({
+      ...c,
+      name: c.name || account.name,
+      business: c.business || account.business || "",
+      mobile: c.mobile || formatMobile(account.mobile),
+      location: c.location || account.city || "",
+    }));
+  }, [account]);
+
+  /** Save the enquiry (server re-reads prices) and return its reference. Failure never blocks WhatsApp. */
+  const record = async (c: EnquiryCustomer, pricesVerified: boolean): Promise<string | undefined> => {
+    const items = basket.lines.map((l) => ({ productId: l.productId, quantity: l.quantity }));
+    const key = JSON.stringify([c, items, pricesVerified, account?.id ?? null]);
+    if (recorded?.key === key) return recorded.reference;
+    try {
+      const r = await api<{ reference: string }>("/api/enquiries", { method: "POST", body: JSON.stringify({ customer: c, items, pricesVerified }) });
+      setRecorded({ key, reference: r.reference });
+      return r.reference;
+    } catch {
+      return undefined;
+    }
+  };
 
   // Any change to WHICH products are in the basket invalidates a previous price check.
   const idKey = basket.lines.map((l) => l.productId).join(",");
@@ -111,7 +144,8 @@ export default function Enquiry() {
         toast(`${changed.length + gone.length} item(s) changed since you added them. Please review.`, "error");
         return;
       }
-      setPreview({ message: buildEnquiryMessage(c, buildLines(map)), verified: true });
+      const ref = await record(c, true);
+      setPreview({ message: buildEnquiryMessage(c, buildLines(map), new Date(), ref), verified: true });
     } catch (e) {
       setCheckError(e instanceof ApiError ? e.message : "Could not verify prices.");
     } finally {
@@ -119,7 +153,7 @@ export default function Enquiry() {
     }
   };
 
-  const acceptChangesAndPreview = () => {
+  const acceptChangesAndPreview = async () => {
     const c = validate();
     if (!c || !verified) return;
     // Acknowledge: record the verified prices as "seen" so they are no longer flagged.
@@ -129,13 +163,15 @@ export default function Enquiry() {
       acknowledged.set(id, { ...v, changed: false });
     }
     setVerified({ items: acknowledged, checkedAt: verified.checkedAt });
-    setPreview({ message: buildEnquiryMessage(c, buildLines(acknowledged)), verified: true });
+    const ref = await record(c, true);
+    setPreview({ message: buildEnquiryMessage(c, buildLines(acknowledged), new Date(), ref), verified: true });
   };
 
-  const previewWithoutPrices = () => {
+  const previewWithoutPrices = async () => {
     const c = validate();
     if (!c) return;
-    setPreview({ message: buildEnquiryMessage(c, buildLines(null)), verified: false });
+    const ref = await record(c, false);
+    setPreview({ message: buildEnquiryMessage(c, buildLines(null), new Date(), ref), verified: false });
   };
 
   const copy = async () => {
@@ -270,7 +306,7 @@ export default function Enquiry() {
               noValidate
               onSubmit={(e) => {
                 e.preventDefault();
-                if (hasFlags) acceptChangesAndPreview();
+                if (hasFlags) void acceptChangesAndPreview();
                 else void checkAndPreview();
               }}
             >
@@ -322,6 +358,25 @@ export default function Enquiry() {
                 {checking ? <Spinner className="size-4" /> : <ShieldCheck className="size-4" />}
                 {hasFlags ? "Accept updated prices & preview" : "Check latest prices & preview"}
               </button>
+              <p className="text-[11px] leading-snug text-subtle" data-testid="enquiry-record-note">
+                We keep a copy of your enquiry so our team can follow up.{" "}
+                {account ? (
+                  <>
+                    It will appear under{" "}
+                    <Link to="/account" className="underline">
+                      My account
+                    </Link>
+                    .
+                  </>
+                ) : (
+                  <>
+                    <Link to="/account?next=/enquiry" className="font-semibold text-verdi-700 underline">
+                      Sign in
+                    </Link>{" "}
+                    to track your enquiries and reward points.
+                  </>
+                )}
+              </p>
               {verified && !hasFlags && (
                 <p className="flex items-center gap-1.5 text-xs text-verdi-700">
                   <Check className="size-3.5" /> Prices verified {new Date(verified.checkedAt).toLocaleTimeString("en-IN")}
@@ -348,7 +403,7 @@ export default function Enquiry() {
               <button type="button" className="btn-ghost" onClick={copy} data-testid="copy-message">
                 {copied ? <Check className="size-4" /> : <ClipboardCopy className="size-4" />} {copied ? "Copied" : "Copy message"}
               </button>
-              <a href={whatsappUrl(preview.message)} target="_blank" rel="noopener" className="btn-primary" data-testid="open-whatsapp">
+              <a href={whatsappUrl(preview.message, SITE.whatsappNumber)} target="_blank" rel="noopener" className="btn-primary" data-testid="open-whatsapp">
                 <WhatsAppIcon className="size-4" /> Open WhatsApp
               </a>
             </div>

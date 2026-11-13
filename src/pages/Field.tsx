@@ -6,16 +6,16 @@ import { m, Reveal } from "../components/motion";
 import { Modal } from "../components/ui";
 import { WhatsAppIcon } from "../components/WhatsAppIcon";
 import { usePageMeta } from "../lib/seo";
-import { SITE } from "../site";
-import { FIELD_PHOTOS } from "./field-data";
-
-const TAGS = ["All", ...Array.from(new Set(FIELD_PHOTOS.map((f) => f.tag)))];
+import { useFieldPhotos, useSite } from "../lib/site";
 
 export default function Field() {
+  const SITE = useSite();
   usePageMeta("In the field — solar hardware on Indian rooftops", "Photos of solar modules, inverters, junction boxes and mounting in real rooftop installations, plus manufacturer quality testing.");
+  const photos = useFieldPhotos();
+  const TAGS = ["All", ...Array.from(new Set(photos.map((f) => f.tag)))];
   const [tag, setTag] = useState("All");
   const [open, setOpen] = useState<number | null>(null);
-  const list = FIELD_PHOTOS.filter((f) => tag === "All" || f.tag === tag);
+  const list = photos.filter((f) => tag === "All" || f.tag === tag);
 
   useEffect(() => {
     if (open === null) return;

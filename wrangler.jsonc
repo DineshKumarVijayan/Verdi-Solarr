@@ -23,12 +23,14 @@
     }
   ],
   "r2_buckets": [
-    // Phase 2 admin uploads (images / datasheets). Create with `npx wrangler r2 bucket create verdi-media`.
+    // Admin uploads (product images, datasheets, field photos, brand logos). Create with `npx wrangler r2 bucket create verdi-media`.
     { "binding": "MEDIA", "bucket_name": "verdi-media" }
   ],
   "ratelimits": [
     { "name": "PUBLIC_LIMITER", "namespace_id": "4101", "simple": { "limit": 60, "period": 60 } },
-    { "name": "ADMIN_LIMITER", "namespace_id": "4102", "simple": { "limit": 30, "period": 60 } }
+    { "name": "ADMIN_LIMITER", "namespace_id": "4102", "simple": { "limit": 120, "period": 60 } },
+    // Customer sign-in / registration / enquiry writes (per IP)
+    { "name": "AUTH_LIMITER", "namespace_id": "4103", "simple": { "limit": 20, "period": 60 } }
   ],
   "vars": {
     "ENVIRONMENT": "production",

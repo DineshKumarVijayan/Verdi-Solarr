@@ -41,7 +41,8 @@ export function CatalogueProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    api<PublicCatalogue>("/api/catalogue")
+    // no-cache = always revalidate (ETag → cheap 304), so admin changes show on the very next page load.
+    api<PublicCatalogue>("/api/catalogue", { cache: "no-cache" })
       .then((c) => {
         if (!alive) return;
         setData(c);

@@ -11,9 +11,10 @@ import { SectionHeading } from "../components/ui";
 import { WhatsAppIcon } from "../components/WhatsAppIcon";
 import { useCatalogue } from "../lib/catalogue";
 import { usePageMeta } from "../lib/seo";
-import { SITE } from "../site";
+import { useSite } from "../lib/site";
 
 export default function Home() {
+  const SITE = useSite();
   usePageMeta(
     "VERDI SOLARR SOLUTION — Solar panels, inverters & solar electricals for businesses",
     "B2B supplier of solar panels, inverters, solar DC cables and solar electrical components in Chennai. Browse real datasheets, compare specifications and send a WhatsApp enquiry.",

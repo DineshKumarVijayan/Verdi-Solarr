@@ -1,4 +1,4 @@
-import { ArrowRight, FileWarning, ImageOff, Package, Tags, Building2, History } from "lucide-react";
+import { ArrowRight, Building2, ClipboardList, FileWarning, History, ImageOff, Images, Layers, Package, Plus, Settings, Tags, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { formatPaise } from "../../../shared/money";
@@ -29,11 +29,13 @@ export default function Dashboard() {
 
   const max = Math.max(1, ...d.categories.map((c) => c.count));
   const tiles = [
-    { icon: Package, label: "Active products", value: d.activeProducts, sub: d.inactiveProducts ? `${d.inactiveProducts} archived` : "none archived" },
-    { icon: Building2, label: "Manufacturers", value: d.brands, sub: "active brands" },
+    { icon: ClipboardList, label: "New enquiries", value: d.newEnquiries, sub: "awaiting follow-up", warn: d.newEnquiries > 0, to: "/admin/enquiries?status=new" },
+    { icon: Users, label: "Customer accounts", value: d.customers, sub: "registered customers", to: "/admin/customers" },
+    { icon: Package, label: "Active products", value: d.activeProducts, sub: d.inactiveProducts ? `${d.inactiveProducts} hidden` : "none hidden", to: "/admin/products" },
+    { icon: Building2, label: "Manufacturers", value: d.brands, sub: "active brands", to: "/admin/catalogue" },
     { icon: Tags, label: "Missing prices", value: d.missingPrices, sub: "shown as “price on request”", warn: d.missingPrices > 0, to: "/admin/prices?missing=1" },
-    { icon: ImageOff, label: "Missing images", value: d.missingImages, sub: "using illustrations", warn: d.missingImages > 0 },
-    { icon: FileWarning, label: "Missing datasheets", value: d.missingDatasheets, sub: "products without PDF", warn: d.missingDatasheets > 0 },
+    { icon: ImageOff, label: "Missing images", value: d.missingImages, sub: "using illustrations", warn: d.missingImages > 0, to: "/admin/products" },
+    { icon: FileWarning, label: "Missing datasheets", value: d.missingDatasheets, sub: "products without PDF", warn: d.missingDatasheets > 0, to: "/admin/products" },
   ];
 
   return (
@@ -44,7 +46,24 @@ export default function Dashboard() {
         {d.cataloguePublishedAt ? ` · published ${dt(d.cataloguePublishedAt)}` : " · will publish on next visit"}
       </p>
 
-      <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      {(admin.role === "owner" || admin.role === "admin") && (
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Link to="/admin/products/new" className="btn-primary btn-sm">
+            <Plus className="size-4" /> Add product
+          </Link>
+          <Link to="/admin/catalogue" className="btn-ghost btn-sm">
+            <Layers className="size-4" /> Add brand or category
+          </Link>
+          <Link to="/admin/field-photos" className="btn-ghost btn-sm">
+            <Images className="size-4" /> Field photos
+          </Link>
+          <Link to="/admin/settings" className="btn-ghost btn-sm">
+            <Settings className="size-4" /> Contact details & links
+          </Link>
+        </div>
+      )}
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {tiles.map((t) => {
           const body = (
             <>

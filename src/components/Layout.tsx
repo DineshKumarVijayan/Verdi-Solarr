@@ -1,4 +1,4 @@
-import { ClipboardList, GitCompareArrows, Mail, MapPin, Menu, Phone, Search, X } from "lucide-react";
+import { ArrowRight, Clock, ClipboardList, GitCompareArrows, Mail, MapPin, Megaphone, Menu, Phone, Search, X } from "lucide-react";
 import { AccountMenu } from "./AccountMenu";
 import { ContactFabs } from "./ContactFabs";
 import { WhatsAppIcon } from "./WhatsAppIcon";
@@ -7,7 +7,7 @@ import { Link, NavLink, Outlet, ScrollRestoration, useLocation } from "react-rou
 import { useBasket } from "../lib/basket";
 import { useCatalogue } from "../lib/catalogue";
 import { useCompare } from "../lib/compare";
-import { SITE } from "../site";
+import { useSite } from "../lib/site";
 import { Logo } from "./Logo";
 import { SearchPalette } from "./SearchPalette";
 
@@ -49,6 +49,7 @@ export function Layout() {
       <a href="#main" className="sr-only z-[70] rounded-lg bg-ink px-4 py-2 text-paper focus:not-sr-only focus:fixed focus:top-3 focus:left-3">
         Skip to content
       </a>
+      <Announcement />
       <header className={`sticky top-0 z-40 border-b backdrop-blur-xl ${isHome ? "border-white/10 bg-ink/85 text-paper" : "border-line/70 bg-paper/85"}`}>
         <div className="container-x flex h-16 items-center gap-4">
           <Link to="/" aria-label="VERDI SOLARR SOLUTION — home" className="shrink-0">
@@ -109,7 +110,7 @@ export function Layout() {
         {menuOpen && (
           <nav id="mobile-nav" aria-label="Mobile" className={`border-t lg:hidden ${isHome ? "border-white/10" : "border-line"}`}>
             <ul className="container-x grid gap-1 py-3">
-              {[{ to: "/", label: "Home" }, ...NAV, { to: "/compare", label: "Compare" }, { to: "/admin", label: "Staff / admin sign-in" }].map((n) => (
+              {[{ to: "/", label: "Home" }, ...NAV, { to: "/compare", label: "Compare" }, { to: "/account", label: "My account" }, { to: "/admin", label: "Staff / admin sign-in" }].map((n) => (
                 <li key={n.to}>
                   <NavLink to={n.to} end reloadDocument={n.to === "/admin"} className={({ isActive }) => `block rounded-xl px-3 py-3 text-base font-medium ${isActive ? "bg-verdi-600 text-white" : ""}`}>
                     {n.label}
@@ -133,9 +134,49 @@ export function Layout() {
   );
 }
 
+/** Admin-managed announcement (Admin → Settings). Hidden when empty. */
+function Announcement() {
+  const SITE = useSite();
+  if (!SITE.announcement) return null;
+  const inner = (
+    <>
+      <Megaphone className="size-4 shrink-0 text-sun-500" />
+      <span className="min-w-0 truncate">{SITE.announcement}</span>
+      {SITE.announcementLink && <ArrowRight className="size-3.5 shrink-0" />}
+    </>
+  );
+  const cls = "container-x flex items-center justify-center gap-2 py-2 text-sm font-medium";
+  return (
+    <div className="bg-sun-100 text-ink" data-testid="announcement">
+      {SITE.announcementLink ? (
+        SITE.announcementLink.startsWith("/") ? (
+          <Link to={SITE.announcementLink} className={`${cls} hover:underline`}>
+            {inner}
+          </Link>
+        ) : (
+          <a href={SITE.announcementLink} target="_blank" rel="noopener" className={`${cls} hover:underline`}>
+            {inner}
+          </a>
+        )
+      ) : (
+        <p className={cls}>{inner}</p>
+      )}
+    </div>
+  );
+}
+
 function Footer() {
+  const SITE = useSite();
   const { data } = useCatalogue();
   const year = new Date().getFullYear();
+  const socials = (
+    [
+      ["Instagram", SITE.instagramUrl],
+      ["Facebook", SITE.facebookUrl],
+      ["YouTube", SITE.youtubeUrl],
+      ["LinkedIn", SITE.linkedinUrl],
+    ] as const
+  ).filter(([, href]) => !!href);
   return (
     <footer className="bg-ink text-paper/75">
       <div className="container-x grid gap-10 py-14 md:grid-cols-12">
@@ -202,7 +243,24 @@ function Footer() {
                 {SITE.email}
               </a>
             </li>
+            {SITE.businessHours && (
+              <li className="flex gap-2.5">
+                <Clock className="mt-0.5 size-4 shrink-0 text-verdi-300" />
+                <span>{SITE.businessHours}</span>
+              </li>
+            )}
           </ul>
+          {socials.length > 0 && (
+            <ul className="mt-4 flex flex-wrap gap-2" aria-label="Social media" data-testid="social-links">
+              {socials.map(([label, href]) => (
+                <li key={label}>
+                  <a href={href} target="_blank" rel="noopener me" className="inline-block rounded-full border border-white/15 px-3 py-1 text-xs hover:border-white/40 hover:text-paper">
+                    {label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
         </address>
       </div>
       <div className="border-t border-white/10">

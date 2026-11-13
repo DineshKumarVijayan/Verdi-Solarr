@@ -45,7 +45,32 @@ export interface PublicBrand {
   slug: string;
   name: string;
   description: string | null;
+  logo?: string | null;
+  website?: string | null;
 }
+
+export interface PublicFieldPhoto {
+  src: string;
+  caption: string;
+  tag: string;
+  tall: boolean;
+}
+
+export const SITE_SETTING_KEYS = [
+  "contactPerson",
+  "phone",
+  "whatsapp",
+  "email",
+  "address",
+  "businessHours",
+  "instagramUrl",
+  "facebookUrl",
+  "youtubeUrl",
+  "linkedinUrl",
+  "announcement",
+  "announcementLink",
+] as const;
+export type SiteSettingKey = (typeof SITE_SETTING_KEYS)[number];
 
 export interface PublicCategory {
   id: number;
@@ -56,11 +81,17 @@ export interface PublicCategory {
 }
 
 export interface PublicCatalogue {
+  /** Snapshot format. Bumped when fields are added so stale snapshots are rebuilt. */
+  schema?: number;
   version: number;
   publishedAt: string;
   brands: PublicBrand[];
   categories: PublicCategory[];
   products: PublicProduct[];
+  /** Admin-managed "In the field" gallery. */
+  fieldPhotos?: PublicFieldPhoto[];
+  /** Admin-managed business details & links (whitelisted keys only). */
+  settings?: Partial<Record<SiteSettingKey, string>>;
 }
 
 export interface RevalidatedItem {
@@ -127,4 +158,184 @@ export interface AdminDashboard {
   recentActivity: { auditId: number; adminIdentity: string; action: string; entityType: string; entityId: string | null; createdAt: string }[];
   catalogueVersion: number | null;
   cataloguePublishedAt: string | null;
+  newEnquiries: number;
+  customers: number;
+}
+
+// ------------------------------------------------------------- admin content
+
+export interface AdminBrand {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  website: string | null;
+  logoKey: string | null;
+  logoUrl: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  productCount: number;
+}
+
+export interface AdminCategory {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  productCount: number;
+}
+
+export interface AdminProductListRow {
+  id: number;
+  sku: string;
+  slug: string;
+  name: string;
+  model: string | null;
+  seriesName: string | null;
+  brand: string;
+  category: string;
+  isActive: boolean;
+  isFeatured: boolean;
+  sellingPaise: number | null;
+  images: number;
+  hasDatasheet: boolean;
+  updatedAt: string;
+}
+
+export interface AdminSpec {
+  key: string;
+  label: string;
+  value: string;
+  unit: string | null;
+  group: string;
+}
+
+export interface AdminMedia {
+  id: number;
+  type: "image" | "datasheet" | "document";
+  storageKey: string;
+  url: string;
+  alt: string | null;
+  title: string | null;
+  isPrimary: boolean;
+  sortOrder: number;
+}
+
+export interface AdminProductDetail {
+  id: number;
+  sku: string;
+  slug: string;
+  name: string;
+  brandId: number;
+  categoryId: number;
+  seriesKey: string | null;
+  seriesName: string | null;
+  variant: string | null;
+  model: string | null;
+  short: string | null;
+  description: string | null;
+  highlights: string[];
+  isActive: boolean;
+  isFeatured: boolean;
+  updatedAt: string;
+  updatedBy: string | null;
+  specs: AdminSpec[];
+  media: AdminMedia[];
+  price: { sellingPaise: number | null; mrpPaise: number | null; gstRate: number | null; gstIncluded: boolean; unit: string; version: number } | null;
+}
+
+export interface AdminFieldPhoto {
+  id: number;
+  storageKey: string;
+  url: string;
+  caption: string;
+  tag: string;
+  tall: boolean;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface AdminUserRow {
+  id: number;
+  email: string;
+  displayName: string | null;
+  role: AdminRole;
+  isActive: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+// ------------------------------------------------------------------ customers
+
+export type EnquiryStatus = "new" | "contacted" | "quoted" | "won" | "lost" | "cancelled";
+export const ENQUIRY_STATUSES: EnquiryStatus[] = ["new", "contacted", "quoted", "won", "lost", "cancelled"];
+
+export interface CustomerProfile {
+  id: number;
+  name: string;
+  mobile: string;
+  email: string | null;
+  business: string | null;
+  city: string | null;
+  points: number;
+  createdAt: string;
+}
+
+export interface EnquiryItemView {
+  productId: number | null;
+  name: string;
+  brand: string | null;
+  model: string | null;
+  quantity: number;
+  unitPaise: number | null;
+  unit: string | null;
+  gstRate: number | null;
+  gstIncluded: boolean;
+}
+
+export interface EnquiryView {
+  id: number;
+  reference: string;
+  status: EnquiryStatus;
+  createdAt: string;
+  totalPaise: number | null;
+  pricesVerified: boolean;
+  location: string;
+  comments: string | null;
+  items: EnquiryItemView[];
+}
+
+export interface RewardEntry {
+  id: number;
+  points: number;
+  reason: string;
+  enquiryReference: string | null;
+  createdAt: string;
+}
+
+export interface AdminEnquiryRow extends EnquiryView {
+  customerId: number | null;
+  customerName: string | null;
+  contactName: string;
+  business: string | null;
+  mobile: string;
+  adminNotes: string | null;
+  updatedAt: string;
+  updatedBy: string | null;
+}
+
+export interface AdminCustomerRow {
+  id: number;
+  name: string;
+  mobile: string;
+  email: string | null;
+  business: string | null;
+  city: string | null;
+  isActive: boolean;
+  points: number;
+  enquiries: number;
+  createdAt: string;
+  lastLoginAt: string | null;
 }

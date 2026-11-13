@@ -3,9 +3,12 @@
 // request is served directly from static assets without a Worker invocation.
 
 import { RevalidateSchema } from "../shared/schemas";
+import type { AdminIdentity } from "../shared/types";
 import { dashboard, listPrices, priceHistory, recordLogin, updatePrice } from "./admin";
 import { assertSameOrigin, requireAdmin } from "./auth";
 import { handleCatalogue, revalidate } from "./catalogue";
+import * as content from "./content";
+import * as customers from "./customers";
 import type { Env } from "./env";
 import { errorResponse, HttpError, json, readJson } from "./http";
 
@@ -43,19 +46,52 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     return json(await revalidate(env, parsed.data));
   }
 
+  // ------------------------------------------------------- customer accounts
+  if (path.startsWith("/api/account/") || path === "/api/enquiries") {
+    if (method !== "GET") {
+      customers.assertSameSite(request);
+      // Sign-in/registration get a tighter per-IP budget than enquiry submissions.
+      const auth = path.startsWith("/api/account/");
+      await rateLimit(auth ? (env.AUTH_LIMITER ?? env.PUBLIC_LIMITER) : env.PUBLIC_LIMITER, `${auth ? "acct" : "enq"}:${ip}`);
+    }
+    if (path === "/api/account/me" && method === "GET") return customers.me(request, env);
+    if (path === "/api/account/register" && method === "POST") return customers.register(request, env, await readJson(request));
+    if (path === "/api/account/login" && method === "POST") return customers.login(request, env, await readJson(request));
+    if (path === "/api/account/logout" && method === "POST") return customers.logout(request, env);
+    if (path === "/api/account/profile" && method === "PUT") return customers.updateProfile(request, env, await readJson(request));
+    if (path === "/api/account/password" && method === "PUT") return customers.changePassword(request, env, await readJson(request));
+    if (path === "/api/account/reset" && method === "POST") return customers.resetPassword(request, env, await readJson(request));
+    if (path === "/api/account/enquiries" && method === "GET") return customers.myEnquiries(request, env);
+    if (path === "/api/account/rewards" && method === "GET") return customers.myRewards(request, env);
+    if (path === "/api/enquiries" && method === "POST") return customers.createEnquiry(request, env, await readJson(request, 32 * 1024));
+    throw new HttpError(404, "not_found", "Unknown account endpoint.");
+  }
+
   if (path.startsWith("/api/media/") && method === "GET") {
     // Phase 2: admin-uploaded images/datasheets stored in R2 (read-only, public).
     const key = decodeURIComponent(path.slice("/api/media/".length));
     if (!R2_KEY.test(key) || key.includes("..")) throw new HttpError(400, "bad_key", "Invalid media key.");
     if (!env.MEDIA) throw new HttpError(404, "not_found", "Media storage not configured.");
+    // Keys are random and never reused, so files are immutable: cache at the edge and in the browser.
+    let cache: Cache | null = null;
+    try {
+      cache = caches.default;
+    } catch {
+      cache = null;
+    }
+    const cacheKey = new Request(`https://verdi-cache.internal/media/${key}`);
+    const hit = cache ? await cache.match(cacheKey) : undefined;
+    if (hit) return hit;
     const obj = await env.MEDIA.get(key);
     if (!obj) throw new HttpError(404, "not_found", "File not found.");
     const headers = new Headers();
     obj.writeHttpMetadata(headers);
     headers.set("ETag", obj.httpEtag);
-    headers.set("Cache-Control", "public, max-age=86400, immutable");
+    headers.set("Cache-Control", "public, max-age=31536000, immutable");
     headers.set("X-Content-Type-Options", "nosniff");
-    return new Response(obj.body, { headers });
+    const res = new Response(obj.body, { headers });
+    if (cache) ctx.waitUntil(cache.put(cacheKey, res.clone()));
+    return res;
   }
 
   // ------------------------------------------------------------------- admin
@@ -79,10 +115,79 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       if (m[2] && method === "GET") return json({ history: await priceHistory(env, productId) });
       if (!m[2] && method === "PUT") return json(await updatePrice(env, admin, productId, await readJson(request)));
     }
+
+    const res = await adminContent(request, env, admin, path, method, url);
+    if (res) return res;
     throw new HttpError(404, "not_found", "Unknown admin endpoint.");
   }
 
   throw new HttpError(404, "not_found", "Unknown API endpoint.");
+}
+
+/** Admin content-management routes. Returns null when no route matches. */
+async function adminContent(request: Request, env: Env, admin: AdminIdentity, path: string, method: string, url: URL): Promise<Response | null> {
+  const body = (max?: number) => readJson(request, max);
+  const seg = path.slice("/api/admin/".length).split("/");
+  const id = seg[1] && /^\d{1,9}$/.test(seg[1]) ? Number(seg[1]) : null;
+  const [res, , sub, subId] = seg;
+  const subNum = subId && /^\d{1,9}$/.test(subId) ? Number(subId) : null;
+
+  switch (res) {
+    case "brands":
+      if (seg.length === 1 && method === "GET") return json({ brands: await content.listBrands(env) });
+      if (seg.length === 1 && method === "POST") return json(await content.saveBrand(env, admin, null, await body()), { status: 201 });
+      if (id && seg.length === 2 && method === "PUT") return json(await content.saveBrand(env, admin, id, await body()));
+      if (id && seg.length === 2 && method === "DELETE") return json(await content.deleteBrand(env, admin, id));
+      break;
+    case "categories":
+      if (seg.length === 1 && method === "GET") return json({ categories: await content.listCategories(env) });
+      if (seg.length === 1 && method === "POST") return json(await content.saveCategory(env, admin, null, await body()), { status: 201 });
+      if (id && seg.length === 2 && method === "PUT") return json(await content.saveCategory(env, admin, id, await body()));
+      if (id && seg.length === 2 && method === "DELETE") return json(await content.deleteCategory(env, admin, id));
+      break;
+    case "products":
+      if (seg.length === 1 && method === "GET") return json(await content.listProducts(env, url));
+      if (seg.length === 1 && method === "POST") return json(await content.createProduct(env, admin, await body(256 * 1024)), { status: 201 });
+      if (id && seg.length === 2 && method === "GET") return json({ product: await content.getProduct(env, id) });
+      if (id && seg.length === 2 && method === "PUT") return json(await content.updateProduct(env, admin, id, await body(256 * 1024)));
+      if (id && seg.length === 2 && method === "DELETE") return json(await content.deleteProduct(env, admin, id));
+      if (id && sub === "duplicate" && seg.length === 3 && method === "POST") return json(await content.duplicateProduct(env, admin, id), { status: 201 });
+      if (id && sub === "media" && seg.length === 3 && method === "POST") return json(await content.addMedia(env, admin, id, await body()), { status: 201 });
+      if (id && sub === "media" && subNum && method === "PUT") return json(await content.updateMedia(env, admin, id, subNum, await body()));
+      if (id && sub === "media" && subNum && method === "DELETE") return json(await content.deleteMedia(env, admin, id, subNum));
+      break;
+    case "uploads":
+      if (seg.length === 1 && method === "POST") return json(await content.upload(env, admin, request, url), { status: 201 });
+      break;
+    case "field-photos":
+      if (seg.length === 1 && method === "GET") return json({ photos: await content.listFieldPhotos(env) });
+      if (seg.length === 1 && method === "POST") return json(await content.saveFieldPhoto(env, admin, null, await body()), { status: 201 });
+      if (id && seg.length === 2 && method === "PUT") return json(await content.saveFieldPhoto(env, admin, id, await body()));
+      if (id && seg.length === 2 && method === "DELETE") return json(await content.deleteFieldPhoto(env, admin, id));
+      break;
+    case "settings":
+      if (seg.length === 1 && method === "GET") return json({ settings: await content.getSettings(env) });
+      if (seg.length === 1 && method === "PUT") return json(await content.saveSettings(env, admin, await body()));
+      break;
+    case "users":
+      content.requireRole(admin, ["owner"], "manage admin users");
+      if (seg.length === 1 && method === "GET") return json({ users: await content.listAdminUsers(env) });
+      if (seg.length === 1 && method === "POST") return json(await content.saveAdminUser(env, admin, null, await body()), { status: 201 });
+      if (id && seg.length === 2 && method === "PUT") return json(await content.saveAdminUser(env, admin, id, await body()));
+      break;
+    case "customers":
+      if (seg.length === 1 && method === "GET") return json(await content.listCustomers(env, url));
+      if (id && seg.length === 2 && method === "GET") return json(await content.customerDetail(env, id));
+      if (id && seg.length === 2 && method === "PUT") return json(await content.setCustomerActive(env, admin, id, await body()));
+      if (id && sub === "points" && seg.length === 3 && method === "POST") return json(await content.adjustPoints(env, admin, id, await body()));
+      if (id && sub === "reset-link" && seg.length === 3 && method === "POST") return json(await content.customerResetLink(env, admin, id, url.origin));
+      break;
+    case "enquiries":
+      if (seg.length === 1 && method === "GET") return json(await content.listEnquiries(env, url));
+      if (id && seg.length === 2 && method === "PUT") return json(await content.updateEnquiry(env, admin, id, await body()));
+      break;
+  }
+  return null;
 }
 
 export default {

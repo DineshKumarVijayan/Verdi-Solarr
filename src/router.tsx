@@ -4,6 +4,7 @@ import { DatasheetProvider } from "./components/Datasheet";
 import { Layout } from "./components/Layout";
 import { MotionProvider } from "./components/motion";
 import { Spinner, ToastProvider } from "./components/ui";
+import { AccountProvider } from "./lib/account";
 import { BasketProvider } from "./lib/basket";
 import { CatalogueProvider } from "./lib/catalogue";
 import { CompareProvider } from "./lib/compare";
@@ -22,6 +23,16 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
 const AdminPrices = lazy(() => import("./pages/admin/Prices"));
+const AdminProducts = lazy(() => import("./pages/admin/Products"));
+const AdminProductEditor = lazy(() => import("./pages/admin/ProductEditor"));
+const AdminCatalog = lazy(() => import("./pages/admin/Catalog"));
+const AdminFieldPhotos = lazy(() => import("./pages/admin/FieldPhotos"));
+const AdminEnquiries = lazy(() => import("./pages/admin/Enquiries"));
+const AdminCustomers = lazy(() => import("./pages/admin/Customers"));
+const AdminSettings = lazy(() => import("./pages/admin/Settings"));
+const AdminUsers = lazy(() => import("./pages/admin/Users"));
+const Account = lazy(() => import("./pages/Account"));
+const AccountReset = lazy(() => import("./pages/Account").then((m) => ({ default: m.AccountReset })));
 
 function Page({ children }: { children: ReactNode }) {
   return (
@@ -42,6 +53,7 @@ function Providers() {
     <MotionProvider>
     <ToastProvider>
       <CatalogueProvider>
+        <AccountProvider>
         <BasketProvider>
           <CompareProvider>
             <DatasheetProvider>
@@ -49,6 +61,7 @@ function Providers() {
             </DatasheetProvider>
           </CompareProvider>
         </BasketProvider>
+        </AccountProvider>
       </CatalogueProvider>
     </ToastProvider>
     </MotionProvider>
@@ -74,12 +87,23 @@ export const router = createBrowserRouter([
           { path: "/solar-tools/:tool", element: <Page><Tools /></Page> },
           { path: "/contact", element: <Page><Contact /></Page> },
           { path: "/in-the-field", element: <Page><Field /></Page> },
+          { path: "/account", element: <Page><Account /></Page> },
+          { path: "/account/reset", element: <Page><AccountReset /></Page> },
           {
             path: "/admin",
             element: <Page><AdminLayout /></Page>,
             children: [
               { index: true, element: <Page><AdminDashboard /></Page> },
               { path: "prices", element: <Page><AdminPrices /></Page> },
+              { path: "products", element: <Page><AdminProducts /></Page> },
+              { path: "products/new", element: <Page><AdminProductEditor /></Page> },
+              { path: "products/:id", element: <Page><AdminProductEditor /></Page> },
+              { path: "catalogue", element: <Page><AdminCatalog /></Page> },
+              { path: "field-photos", element: <Page><AdminFieldPhotos /></Page> },
+              { path: "enquiries", element: <Page><AdminEnquiries /></Page> },
+              { path: "customers", element: <Page><AdminCustomers /></Page> },
+              { path: "settings", element: <Page><AdminSettings /></Page> },
+              { path: "users", element: <Page><AdminUsers /></Page> },
             ],
           },
           { path: "*", element: <Page><NotFound /></Page> },

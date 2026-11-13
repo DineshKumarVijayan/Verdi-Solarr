@@ -2,7 +2,7 @@ import { ArrowRight, Search } from "lucide-react";
 import { AnimatePresence, useMotionValue, useSpring, useTransform } from "motion/react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { SITE } from "../../site";
+import { useSite } from "../../lib/site";
 import { CountUp, m } from "../motion";
 import { WhatsAppIcon } from "../WhatsAppIcon";
 
@@ -27,6 +27,7 @@ const MOTES = Array.from({ length: 18 }, (_, i) => ({
 }));
 
 export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
+  const SITE = useSite();
   const nav = useNavigate();
   const [q, setQ] = useState("");
   const [idx, setIdx] = useState(0);
@@ -194,7 +195,6 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
           ))}
         </dl>
       </div>
-      <p className="absolute top-3 right-4 text-[9px] text-paper/40 max-sm:hidden">Photo: Bernd Dittrich / Unsplash</p>
     </section>
   );
 }

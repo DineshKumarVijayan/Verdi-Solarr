@@ -1,14 +1,17 @@
-import { LayoutDashboard, LogIn, Tags, UserRound } from "lucide-react";
+import { Award, ClipboardList, LayoutDashboard, LogIn, LogOut, UserPlus, UserRound } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router";
+import { useAccount } from "../lib/account";
 import { m } from "./motion";
 
 /**
- * Discreet staff menu. Links use full page loads so Cloudflare Access can
- * intercept /admin at the edge and show its sign-in screen.
+ * Account menu: customer sign-in / account, plus a discreet staff section.
+ * Staff links use full page loads so Cloudflare Access can intercept /admin at the edge.
  */
 export function AccountMenu({ dark }: { dark: boolean }) {
   const [open, setOpen] = useState(false);
+  const { customer, logout } = useAccount();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,12 +35,18 @@ export function AccountMenu({ dark }: { dark: boolean }) {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Staff account menu"
-        title="Staff sign-in"
+        aria-label={customer ? `Account menu for ${customer.name}` : "Account menu"}
+        title={customer ? customer.name : "Sign in"}
         data-testid="account-menu"
         className={`rounded-full p-2.5 transition ${dark ? "hover:bg-white/10" : "hover:bg-paper-2"}`}
       >
-        <UserRound className="size-5" />
+        {customer ? (
+          <span className="grid size-5 place-items-center rounded-full bg-verdi-500 text-[11px] font-bold text-white" data-testid="signed-in-badge">
+            {customer.name.trim()[0]?.toUpperCase()}
+          </span>
+        ) : (
+          <UserRound className="size-5" />
+        )}
       </button>
       <AnimatePresence>
         {open && (
@@ -49,17 +58,45 @@ export function AccountMenu({ dark }: { dark: boolean }) {
             transition={{ duration: 0.16 }}
             className="absolute right-0 z-50 mt-2 w-60 origin-top-right rounded-2xl border border-line bg-card p-1.5 text-ink shadow-[var(--shadow-lift)]"
           >
-            <p className="px-3 pt-2 pb-1.5 font-mono text-[10px] tracking-[0.16em] text-subtle uppercase">VERDI staff</p>
+            {customer ? (
+              <>
+                <div className="px-3 pt-2 pb-2">
+                  <p className="truncate text-sm font-semibold">{customer.name}</p>
+                  <p className="flex items-center gap-1 text-xs text-muted">
+                    <Award className="size-3.5 text-sun-500" /> {customer.points.toLocaleString("en-IN")} reward points
+                  </p>
+                </div>
+                <Link role="menuitem" to="/account" className={item} onClick={() => setOpen(false)} data-testid="my-account-link">
+                  <ClipboardList className="size-4 text-verdi-600" /> My enquiries & points
+                </Link>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={`${item} w-full`}
+                  onClick={async () => {
+                    setOpen(false);
+                    await logout();
+                  }}
+                >
+                  <LogOut className="size-4 text-subtle" /> Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="px-3 pt-2 pb-1.5 font-mono text-[10px] tracking-[0.16em] text-subtle uppercase">Customers</p>
+                <Link role="menuitem" to="/account" className={item} onClick={() => setOpen(false)} data-testid="customer-signin-link">
+                  <LogIn className="size-4 text-verdi-600" /> Sign in
+                </Link>
+                <Link role="menuitem" to="/account?mode=register" className={item} onClick={() => setOpen(false)}>
+                  <UserPlus className="size-4 text-subtle" /> Create an account
+                </Link>
+              </>
+            )}
+            <div className="my-1.5 border-t border-line" />
+            <p className="px-3 pt-1 pb-1.5 font-mono text-[10px] tracking-[0.16em] text-subtle uppercase">VERDI staff</p>
             <a role="menuitem" href="/admin" className={item} data-testid="admin-signin-link">
-              <LogIn className="size-4 text-verdi-600" /> Staff / admin sign-in
+              <LayoutDashboard className="size-4 text-subtle" /> Staff / admin sign-in
             </a>
-            <a role="menuitem" href="/admin" className={item}>
-              <LayoutDashboard className="size-4 text-subtle" /> Admin dashboard
-            </a>
-            <a role="menuitem" href="/admin/prices" className={item}>
-              <Tags className="size-4 text-subtle" /> Price management
-            </a>
-            <p className="px-3 pt-1 pb-2 text-[11px] leading-snug text-subtle">Sign-in is protected by Cloudflare Access. Only authorised staff emails can enter.</p>
           </m.div>
         )}
       </AnimatePresence>

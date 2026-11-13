@@ -164,6 +164,7 @@ test("learning hub: open a lesson, interact, go to next lesson", async ({ page }
 
 test("in-the-field gallery filters and opens a lightbox", async ({ page }) => {
   await page.goto("/in-the-field");
+  await expect(page.getByTestId("field-photo").first()).toBeVisible();
   const all = await page.getByTestId("field-photo").count();
   expect(all).toBeGreaterThan(5);
   await page.getByRole("tab", { name: "Inverters" }).click();

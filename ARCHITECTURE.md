@@ -8,12 +8,13 @@ Browser ──► Cloudflare edge
              └─ /api/*  ──► Worker (worker/index.ts)
                    ├─ GET  /api/catalogue            public, edge-cached snapshot (1 D1 row on miss)
                    ├─ POST /api/enquiry/revalidate   authoritative prices for ≤50 items (1 query)
-                   ├─ GET  /api/media/:key           R2 objects (Phase 2 uploads)
+                   ├─ GET  /api/media/:key           R2 objects (admin uploads, edge + browser cached)
+                   ├─ /api/account/*  /api/enquiries  customer accounts & enquiry records (cookie session)
                    ├─ GET  /api/health
                    └─ /api/admin/*                   Access JWT + D1 allowlist + origin check
                          me · dashboard · prices (list) · prices/:id (PUT) · prices/:id/history
                                    │
-                         Cloudflare D1 (SQLite)  ·  R2 bucket "verdi-media" (future)
+                         Cloudflare D1 (SQLite)  ·  R2 bucket "verdi-media" (uploads)
 ```
 
 ## Free-tier-first decisions
@@ -28,7 +29,7 @@ Limits read from the official docs on 2026-11-13. Re-check them before relying o
 | D1 rows written | 100 k/day | Writes only on admin price saves (≈4 rows + snapshot). |
 | D1 storage | 500 MB per DB, 5 GB per account | The catalogue is a few MB. Binaries are never stored in D1. |
 | D1 queries per invocation | 50 | `db.batch()` is used (it counts as one). |
-| R2 | 10 GB-month, 1 M Class A, 10 M Class B per month, free egress | Reserved for future uploads. Supplied PDFs are static assets. |
+| R2 | 10 GB-month, 1 M Class A, 10 M Class B per month, free egress | Admin uploads (product images, datasheets, field photos, logos). Images are resized to ≤2000 px WebP in the browser before upload. Supplied PDFs remain static assets. |
 | Static assets | 20,000 files, 25 MiB per file | ~200 files today. The largest PDF is 4 MB. |
 | Access | Seat count not stated on the pages read. Check Zero Trust → Plans. | Only staff log in. |
 
@@ -62,7 +63,7 @@ The Vite SPA is code-split per route. pdf.js (≈440 KB) loads only when a datas
 | Validation | Zod `.strict()` schemas. Integer paise between 0 and ₹10 crore. GST ∈ {0, 5, 12, 18, 28}. Selling price ≤ MRP. Body ≤ 16 KB. |
 | Concurrency | `UPDATE … WHERE Version = expected`. History and audit rows are inserted only `WHERE changes() = 1`, all in one atomic batch. Conflicts return 409 with the current values. |
 | SQL | Bound parameters only. `LIKE` input is escaped. |
-| Rate limiting | Workers rate-limit bindings: 60 per minute per IP (revalidate) and 30 per minute per admin (writes). The code tolerates a missing binding. |
+| Rate limiting | Workers rate-limit bindings: 60 per minute per IP (revalidate, enquiries), 20 per minute per IP (customer sign-in and registration) and 120 per minute per admin (writes). The code tolerates a missing binding. |
 | Headers | CSP, HSTS, X-Frame-Options DENY, nosniff and Permissions-Policy (`public/_headers`). `noindex` on /admin. |
 | Secrets | None in the repo. Access identifiers are non-secret vars. `.dev.vars` is git-ignored. |
 
@@ -70,11 +71,28 @@ The Vite SPA is code-split per route. pdf.js (≈440 KB) loads only when a datas
 
 `ProductMedia.StorageKey` is either a static path (`/datasheets/x.pdf`) or `r2:<key>`, which is served via `/api/media/<key>` with immutable caching. `mediaUrl()` in `worker/catalogue.ts` abstracts both. D1 stores metadata only.
 
-## Phase 2 expansion plan (product CRUD)
+## Dynamic content (admin-managed)
 
-Already in place: brand and category tables, a media abstraction, an R2 binding, roles, audit logs, and snapshot republishing.
-To add:
-1. `worker/admin.ts`: endpoints for brands, categories, products and specs (create, update, archive via `IsActive`), each calling `publishCatalogue()` and writing `AuditLogs`.
-2. Uploads: `POST /api/admin/media` with an extension, size (≤10 MB images, ≤25 MB PDF) and type allowlist. Key `products/<id>/<uuid>.<ext>`, `env.MEDIA.put`, plus a `ProductMedia` row. Replacing or reordering updates rows. Deleting removes the row first, then the R2 object.
-3. Admin screens under `/admin/products`.
-4. Optional Worker HTMLRewriter SEO for products created after the last build.
+Everything that changes over time is data, not code:
+
+| What | Admin screen | Storage | Public delivery |
+|---|---|---|---|
+| Brands, categories, products, specs, highlights | Products, Brands & categories | D1 | Snapshot |
+| Prices | Prices (or initial price on create) | D1 `ProductPrices` + history | Snapshot + live revalidation |
+| Product images, datasheets, brand logos, field photos | Product editor, Field photos | R2 (`r2:` keys) + D1 metadata | `/api/media/<key>`, immutable cache |
+| Contact details, social links, announcement | Settings | D1 `SiteSettings` | Snapshot (`useSite()`) |
+| Enquiries, customers, reward points | Enquiries, Customers | D1 | Account pages (private) |
+
+Every admin write is role-checked, audited in the same D1 batch, then calls `republish()`, which rebuilds `PublishedCatalogue` and purges the edge cache. The browser fetches the catalogue with `cache: "no-cache"` (ETag → 304), so changes show on the next page load. Product edits use `UpdatedAt` as an optimistic-concurrency token. Uploads are size-limited and **type-sniffed from their bytes** (PDF/JPEG/PNG/WebP only), and are deleted from R2 when nothing references them any more.
+
+**New products and SEO:** products created in the admin are fully functional immediately (client-rendered via the SPA fallback). They get prerendered HTML and a sitemap entry at the next `npm run build` only if they are also in `data/catalogue.mjs`. A later improvement is to prerender from the live API at build time.
+
+## Customer accounts
+
+Separate from admin auth. Mobile number (normalised to 91XXXXXXXXXX) + password.
+- Passwords: PBKDF2-HMAC-SHA256, 100,000 iterations (the Workers maximum), 16-byte salt, constant-time compare, dummy hash for unknown users (no timing leak). The format carries the iteration count, so it can be raised later.
+- Sessions: 32 random bytes in an `HttpOnly; Secure; SameSite=Lax` cookie (`__Host-vs_session` on HTTPS). Only the SHA-256 is stored. 30-day expiry. Password change or reset revokes all sessions.
+- A non-secret `vs_signed_in=1` hint cookie means anonymous visitors never call `/api/account/me`.
+- Abuse controls: `AUTH_LIMITER` (20 per minute per IP); 5 failed sign-ins lock the account for 15 minutes; Origin + Sec-Fetch-Site checks on every write.
+- Password reset: there is no email/SMS provider yet, so an admin issues a one-time 48 h link and shares it on WhatsApp. Email or OTP reset can be added later without schema changes.
+- Enquiries: `POST /api/enquiries` re-reads prices from D1 (never trusts the browser), stores a snapshot and returns a reference that is included in the WhatsApp message. Guests are recorded with `CustomerId` NULL.

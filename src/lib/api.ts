@@ -15,7 +15,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     res = await fetch(path, {
       ...init,
       credentials: "same-origin",
-      headers: { Accept: "application/json", ...(init.body ? { "Content-Type": "application/json" } : {}), ...init.headers },
+      headers: { Accept: "application/json", ...(typeof init.body === "string" ? { "Content-Type": "application/json" } : {}), ...init.headers },
     });
   } catch {
     throw new ApiError(0, "network", "Network error — please check your connection.");

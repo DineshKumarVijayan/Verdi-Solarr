@@ -19,7 +19,7 @@ npm run db:seed:remote         # imports the 45 products, categories and the own
 ```
 To make someone else the owner admin at seed time: `node scripts/generate-seed.mjs --admin=person@example.com`, then `npx wrangler d1 execute verdi-db --remote --file=./seed/seed.sql`.
 
-## 2. Create the R2 bucket (for future uploads)
+## 2. Create the R2 bucket (admin uploads: product images, datasheets, field photos, logos)
 ```bash
 npx wrangler r2 bucket create verdi-media
 ```

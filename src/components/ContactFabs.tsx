@@ -1,10 +1,11 @@
 import { Phone } from "lucide-react";
-import { SITE } from "../site";
+import { useSite } from "../lib/site";
 import { m } from "./motion";
 import { WhatsAppIcon, WHATSAPP_GREEN } from "./WhatsAppIcon";
 
 /** Floating WhatsApp + Call buttons (bottom-right), with an attention pulse on WhatsApp. */
 export function ContactFabs() {
+  const SITE = useSite();
   const base = "group relative grid size-13 place-items-center rounded-full text-white shadow-[var(--shadow-lift)] focus-visible:outline-offset-4";
   const label =
     "pointer-events-none absolute right-full mr-3 hidden whitespace-nowrap rounded-full bg-ink px-3 py-1.5 text-xs font-semibold text-paper opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100 sm:block";

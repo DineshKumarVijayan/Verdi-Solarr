@@ -15,7 +15,17 @@ Database name: `verdi-db` · binding: `DB` · migrations: `migrations/` · money
 | `ProductMedia` | Images and datasheets (metadata only) | `MediaType` image/datasheet/document, `StorageKey` (`/static/path` or `r2:key`) |
 | `AdminUsers` | Admin allowlist and roles (no passwords; Access handles login) | `Email` UNIQUE NOCASE, `Role`, `IsActive`, `LastLoginAt` |
 | `AuditLogs` | Admin actions with before/after JSON | `AdminIdentity`, `Action`, `EntityType`, `EntityId` |
-| `PublishedCatalogue` | Derived public snapshot (1 row). Safe to delete because it rebuilds itself. | `Version`, `PayloadJson`, `PublishedAt` |
+| `PublishedCatalogue` | Derived public snapshot (1 row): products, brands, categories, field photos and site settings. Safe to delete because it rebuilds itself. | `Version`, `PayloadJson` (starts with `{"schema":N`), `PublishedAt` |
+| `FieldPhotos` *(0002)* | “In the field” gallery, managed in Admin → Field photos | `StorageKey`, `Caption`, `Tag`, `IsTall`, `SortOrder`, `IsActive` |
+| `SiteSettings` *(0002)* | Editable contact details, social links and announcement (whitelisted keys in `shared/types.ts`) | `SettingKey` PK, `SettingValue` |
+| `Customers` *(0002)* | Customer accounts, **separate from admins** | `Mobile` UNIQUE (91XXXXXXXXXX), `Email` UNIQUE NOCASE, `PasswordHash` (PBKDF2-SHA256, salted; never plaintext), `FailedLogins`, `LockedUntil`, `IsActive` |
+| `CustomerSessions` *(0002)* | Sign-in sessions (30 days) | `SessionHash` = SHA-256 of the cookie token (the token itself is never stored) |
+| `PasswordResetTokens` *(0002)* | One-time reset links issued by an admin (48 h) | `TokenHash`, `ExpiresAt`, `UsedAt` |
+| `Enquiries` *(0002)* | Every basket enquiry (guest or signed-in) | `Reference` UNIQUE, `CustomerId` (NULL for guests), `Status` new/contacted/quoted/won/lost/cancelled, `IndicativeTotalPaise`, `AdminNotes` |
+| `EnquiryItems` *(0002)* | Line items as listed at the time (snapshot) | `ProductId` (SET NULL if the product is deleted), `ProductName`, `Quantity`, `UnitPricePaise` |
+| `RewardTransactions` *(0002)* | Append-only reward-points ledger; balance = SUM(`Points`) | `Points` (±), `Reason`, `EnquiryId`, `CreatedBy` |
+
+Migration `0002_dynamic_content_and_customers.sql` is **additive only**. It adds columns (`Products.UpdatedBy`, `Brands.Website`, `Brands.SortOrder`) and new tables, and inserts the 9 initial field photos. No existing row or price is changed.
 
 ## Running SQL
 
@@ -109,7 +119,7 @@ SELECT p.ProductName FROM ProductSpecifications s JOIN Products p ON p.ProductId
 WHERE s.SpecificationKey = 'mppt_count' AND s.SpecificationValue = '2';
 ```
 
-**Admin management (SQL):**
+**Admin management:** normally done by an owner in **Admin → Admin users**. SQL equivalent (e.g. to recover access):
 ```sql
 INSERT INTO AdminUsers (Email, DisplayName, Role) VALUES ('person@example.com', 'Name', 'price_editor');
 UPDATE AdminUsers SET IsActive = 0 WHERE Email = 'person@example.com';      -- revoke

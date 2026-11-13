@@ -7,7 +7,7 @@ import { ProductCard } from "../components/ProductCard";
 import { Modal } from "../components/ui";
 import { useCatalogue } from "../lib/catalogue";
 import { usePageMeta } from "../lib/seo";
-import { SITE } from "../site";
+import { useSite } from "../lib/site";
 
 type Sort = NonNullable<SearchFilters["sort"]>;
 const SORTS: { v: Sort; l: string }[] = [
@@ -22,6 +22,7 @@ const list = (v: string | null) => (v ? v.split(",").filter(Boolean) : []);
 const num = (v: string | null) => (v && !Number.isNaN(Number(v)) ? Number(v) : null);
 
 export default function Products() {
+  const SITE = useSite();
   const { categorySlug } = useParams();
   const { data, index, loading, error, reload, categoryBySlug, countByCategory } = useCatalogue();
   const [params, setParams] = useSearchParams();

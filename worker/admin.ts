@@ -203,6 +203,7 @@ export async function dashboard(env: Env): Promise<AdminDashboard> {
     ),
     env.DB.prepare("SELECT AuditId, AdminIdentity, Action, EntityType, EntityId, CreatedAt FROM AuditLogs ORDER BY CreatedAt DESC, AuditId DESC LIMIT 10"),
     env.DB.prepare("SELECT Version, PublishedAt FROM PublishedCatalogue WHERE Id = 1"),
+    env.DB.prepare("SELECT (SELECT COUNT(*) FROM Enquiries WHERE Status = 'new') AS enq, (SELECT COUNT(*) FROM Customers) AS cust"),
   ]);
   const one = (i: number) => r[i].results[0] as Record<string, number> | undefined;
   const pub = r[8].results[0] as { Version: number; PublishedAt: string } | undefined;
@@ -231,5 +232,7 @@ export async function dashboard(env: Env): Promise<AdminDashboard> {
     })),
     catalogueVersion: pub?.Version ?? null,
     cataloguePublishedAt: pub?.PublishedAt ?? null,
+    newEnquiries: (r[9].results[0] as { enq: number } | undefined)?.enq ?? 0,
+    customers: (r[9].results[0] as { cust: number } | undefined)?.cust ?? 0,
   };
 }

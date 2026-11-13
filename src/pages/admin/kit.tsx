@@ -1,0 +1,123 @@
+import { UploadCloud } from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
+import type { AdminIdentity } from "../../../shared/types";
+import { Spinner } from "../../components/ui";
+import { api, ApiError } from "../../lib/api";
+
+/** JSON write to an admin endpoint. */
+export function send<T>(path: string, method: "POST" | "PUT" | "DELETE", body?: unknown): Promise<T> {
+  return api<T>(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
+}
+
+export const canManage = (a: AdminIdentity) => a.role === "owner" || a.role === "admin";
+
+export function errorText(e: unknown, fallback = "Something went wrong."): string {
+  return e instanceof ApiError ? e.message : fallback;
+}
+
+export function fieldErrors(e: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (e instanceof ApiError && Array.isArray(e.details)) for (const d of e.details as { path: string; message: string }[]) out[d.path] ??= d.message;
+  return out;
+}
+
+export type UploadKind = "image" | "datasheet" | "field" | "logo";
+
+/**
+ * Shrink large photos in the browser before upload (max 2000 px, WebP), so the site stays fast
+ * and R2 storage stays small. PDFs and already-small images are uploaded unchanged.
+ */
+async function prepareImage(file: File, maxPx: number): Promise<Blob> {
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, maxPx / Math.max(bmp.width, bmp.height));
+    if (scale === 1 && file.type === "image/webp" && file.size < 1_500_000) return file;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bmp.width * scale);
+    canvas.height = Math.round(bmp.height * scale);
+    canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/webp", 0.86));
+    return blob && blob.size < file.size ? blob : file;
+  } catch {
+    return file;
+  }
+}
+
+export async function uploadFile(file: File, kind: UploadKind): Promise<{ storageKey: string; url: string }> {
+  const body = kind === "datasheet" ? file : await prepareImage(file, kind === "logo" ? 800 : 2000);
+  return api(`/api/admin/uploads?kind=${kind}`, {
+    method: "POST",
+    body,
+    headers: { "Content-Type": body.type || "application/octet-stream", "X-File-Name": encodeURIComponent(file.name).slice(0, 120) },
+  });
+}
+
+/** Click-or-drop file picker. */
+export function FileDrop({ accept, label, hint, onFiles, busy, multiple = false, testId }: { accept: string; label: string; hint?: string; onFiles: (f: File[]) => void; busy?: boolean; multiple?: boolean; testId?: string }) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [over, setOver] = useState(false);
+  return (
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        setOver(true);
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setOver(false);
+        const files = [...e.dataTransfer.files];
+        if (files.length) onFiles(multiple ? files : files.slice(0, 1));
+      }}
+      className={`flex flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed p-5 text-center transition ${over ? "border-verdi-500 bg-verdi-50" : "border-line bg-paper"}`}
+    >
+      <button type="button" className="btn-ghost btn-sm" onClick={() => ref.current?.click()} disabled={busy}>
+        {busy ? <Spinner className="size-4" /> : <UploadCloud className="size-4" />} {label}
+      </button>
+      <p className="text-xs text-subtle">{hint ?? "or drag & drop here"}</p>
+      <input
+        ref={ref}
+        type="file"
+        accept={accept}
+        multiple={multiple}
+        className="sr-only"
+        data-testid={testId}
+        onChange={(e) => {
+          const files = [...(e.target.files ?? [])];
+          if (files.length) onFiles(files);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
+}
+
+export function Toggle({ checked, onChange, label, id }: { checked: boolean; onChange: (v: boolean) => void; label: ReactNode; id: string }) {
+  return (
+    <label htmlFor={id} className="inline-flex cursor-pointer items-center gap-2.5 text-sm select-none">
+      <input id={id} type="checkbox" className="peer sr-only" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span className="relative h-6 w-10 shrink-0 rounded-full bg-paper-3 transition peer-checked:bg-verdi-500 peer-focus-visible:outline-2 peer-focus-visible:outline-verdi-500 after:absolute after:top-0.5 after:left-0.5 after:size-5 after:rounded-full after:bg-white after:shadow after:transition peer-checked:after:translate-x-4" />
+      {label}
+    </label>
+  );
+}
+
+export function PageHead({ title, intro, actions }: { title: string; intro?: ReactNode; actions?: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="min-w-0">
+        <h1 className="text-3xl font-semibold">{title}</h1>
+        {intro && <p className="mt-1 max-w-2xl text-sm text-muted">{intro}</p>}
+      </div>
+      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+    </div>
+  );
+}
+
+export function ReadOnlyNote({ admin }: { admin: AdminIdentity }) {
+  if (canManage(admin)) return null;
+  return <p className="mt-4 rounded-xl bg-sun-100 px-3 py-2 text-sm">Your role ({admin.role.replace("_", " ")}) can view this page but not change it.</p>;
+}
+
+export const dt = (s: string | null) => (s ? new Date(s).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "—");

@@ -1,7 +1,7 @@
 # VERDI SOLARR SOLUTION — website
 
 B2B product discovery and enquiry platform for solar panels, inverters, optimisers, solar DC cables and solar electricals.
-One Cloudflare application: a React single-page app served as static assets, plus a Worker for `/api/*`, backed by Cloudflare D1 (SQL) and R2 (future uploads).
+One Cloudflare application: a React single-page app served as static assets, plus a Worker for `/api/*`, backed by Cloudflare D1 (SQL) and R2 (admin uploads). Products, brands, prices, datasheets, photos, contact details, enquiries, customer accounts and reward points are all managed from `/admin`, with no code changes needed.
 
 | What | Where |
 |---|---|
@@ -75,7 +75,7 @@ tests/unit, tests/e2e    Vitest and Playwright suites
 
 | File | Source | Licence |
 |---|---|---|
-| `public/media/hero-solar-farm-golden-*.webp` | “Aerial view of a solar farm reflecting low sun”, Bernd Dittrich, unsplash.com/photos/bheTycKOh9Q | Unsplash License (commercial use, no attribution required; credited on-page anyway) |
+| `public/media/hero-solar-farm-golden-*.webp` | “Aerial view of a solar farm reflecting low sun”, Bernd Dittrich, unsplash.com/photos/bheTycKOh9Q | Unsplash License (free commercial use, attribution not required; not credited on-page) |
 | `public/media/rooftop-array-aerial.mp4` (+ poster) | “Expansive Aerial View of Solar Panel Array”, Nova lv, pexels.com/video/29941043 (14 s excerpt, re-encoded 1600 px) | Pexels License (free use, attribution not required) |
 
 The hero photo is mirrored and overlaid with CSS/Motion effects (sun rays, glow, glint, dust motes, slow zoom, pointer parallax). The video loads only when scrolled into view and never autoplays for reduced-motion users.

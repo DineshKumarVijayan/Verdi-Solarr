@@ -1,48 +1,76 @@
-# Admin guide: updating prices
+# Admin guide
 
-This guide is for VERDI staff. You don’t need any technical knowledge.
+This guide is for VERDI staff. You don’t need any technical knowledge. Everything on the website that changes from time to time (products, brands, prices, datasheets, photos, contact details, enquiries, customers and reward points) is managed from the admin area. **No code changes are needed.**
 
 ## Signing in
-1. Open the website and click the **person icon** in the top bar, then **Staff / admin sign-in** (also available as **Staff sign-in** at the very bottom of any page, or go straight to `/admin`). On phones it is in the ☰ menu.
-2. Cloudflare shows a sign-in screen. Enter your work email address and type in the one-time code you receive by email.
-3. You land on the **Dashboard**. If you see “Access denied”, ask the owner to add your email address to the admin list.
+1. Click the **person icon** in the top bar → **Staff / admin sign-in**, or go to `/admin`. On phones it is in the ☰ menu.
+2. Cloudflare shows a sign-in screen. Enter your work email and type in the one-time code you receive.
+3. You land on the **Dashboard**. If you see “Access denied”, ask the owner to add you under **Admin users**.
 
-## The dashboard
-- **Active products / Manufacturers**: what is currently on the website.
-- **Missing prices**: products customers see as “Price on request”. Click the tile to jump straight to them.
-- **Missing images / datasheets**: products still showing an illustration instead of a photo.
-- **Recently updated prices** and **Recent activity**: who changed what, and when.
+There are no admin passwords on this website. Cloudflare Access checks your email, and the **Admin users** list decides what you may do.
 
-## Changing a price
-1. Click **Prices** in the dark admin bar.
-2. Find the product: type part of its name, SKU or model (e.g. `620`, `STELLAR-5`). You can also pick a manufacturer or category, or tick **Missing price only**.
-3. Click **Edit** on the product.
-4. Fill in:
-   - **Selling price (₹)**: e.g. `16500` or `16,500.50`. Leave it **empty** to show “Price on request”.
-   - **MRP (₹)**: optional. It must not be lower than the selling price.
-   - **GST rate**: 0, 5, 12, 18 or 28%, or “Not specified” (customers then see “+ GST as applicable”).
-   - **Selling price includes GST**: tick this only if the price already includes GST.
-   - **Price unit**: per piece, per metre, per coil, and so on. For cable, choose carefully.
-   - **Reason** (optional): e.g. “Manufacturer revision Nov 2026”.
-5. Check the **Customers will see** line, then click **Save price**.
-6. A green message confirms the save **after** the database has stored it. The website shows the new price within **about one minute**.
+| Role | Can do |
+|---|---|
+| Owner | Everything, including managing admin users |
+| Admin | Products, brands, categories, prices, photos, settings, enquiries and customers |
+| Price editor | Change prices only; view everything else |
+| Viewer | Look only |
 
-### “Someone else changed this price”
-If two people edit the same product at once, the second save is stopped so nobody overwrites the other by accident. Click **Load latest and re-apply**, check the current price, then save again if needed.
+## Dashboard
+Shows new enquiries, customer accounts, products, missing prices, images and datasheets, and recent activity. Each tile is a shortcut.
 
-### Price history
-The right-hand side of the edit window lists every change: old and new price, who changed it, when, and the reason.
+## Products
+**Products → Add product**
+1. Enter the **product name**. The web address fills in automatically.
+2. Choose the **brand** and **category**. If either is new, add it first under **Brands & categories**.
+3. Enter your **SKU** (your own code, e.g. `VS-WAA-540`) and the manufacturer **model number**.
+4. **Product family / series** and **Variant label** group models that share one datasheet (e.g. family “TOPCon 600–630 Wp”, variant “610 Wp”).
+5. Add a **short description**, **full description** and **highlights**. Only state facts from the manufacturer datasheet.
+6. **Specifications:** use **Copy fields from a similar product** to get the same rows (blank values), then type each value exactly as in the datasheet. Keeping the same field keys (e.g. `power_wp`, `voc_v`) keeps search, compare and the calculators working.
+7. Set the **price** (optional; leave blank for “Price on request”).
+8. Click **Create product**. It is live on every page straight away.
+9. Then add **images** (drag & drop; large photos are shrunk automatically, and the ★ image is shown first) and the **datasheet PDF**. Customers can open the datasheet in the website’s PDF viewer.
 
-## What customers see
-- The product card and page show your selling price, the unit and the GST note.
-- When a customer sends an enquiry, the site re-checks your latest price first. If it changed since they added the item, they see the old and new prices before sending.
-- The WhatsApp message always says final prices, taxes, availability and delivery are confirmed by VERDI.
+**Tips**
+- **Duplicate** (copy icon in the list) is the fastest way to add another wattage of the same family. The copy starts hidden; edit it, then switch **Visible on website** on.
+- To take a product off the site temporarily, switch **Visible on website** off. **Delete permanently** removes it and its price history (a copy stays in the audit log).
+- If two people edit the same product at once, the second save is stopped. Reload and re-apply your change.
 
-## Adding product photos (for now)
-Until photo uploads are added to the admin screen (Phase 2), send the photos to the developer. Each photo needs a clear product shot on a plain background, at least 1200 px, named by model (e.g. `stellar-5ktl3x.jpg`). Only use real photos of the actual product.
+## Brands & categories
+- **Add brand:** name, slug (short web name, e.g. `waaree`), description, manufacturer website and logo.
+- **Add category:** name, slug (page address `/category/<slug>`), description and sort order (lower numbers appear first).
+- Hiding a brand or category hides all of its products. You can only delete one that has no products.
 
-## Adding or removing admins
-The owner (or developer) adds people in the database. See “Admin management” in DATABASE.md. Removing someone takes effect immediately.
+## Prices
+1. Go to **Prices**, find the product, and click **Edit**.
+2. Enter the **selling price** (e.g. `16500` or `16,500.50`; empty = “Price on request”), plus optional **MRP**, **GST rate**, **GST included**, **unit** and a **reason**.
+3. Click **Save price**. The website updates on the next page load, and every change is kept in **price history**.
+
+When a customer sends an enquiry, the site re-checks your latest price first. If it changed since they added the item, they see the old and new prices before sending.
+
+## Field photos
+Photos for the **In the field** page and the home-page filmstrip.
+- Pick a **tag** (Rooftop, Inverters, Mounting…), then **Upload photos** (several at once is fine).
+- Edit each **caption** and click **Save**. Use **Portrait** for tall photos, **Visible** to hide or show, and the arrows to reorder.
+- Use only your own photos or properly licensed stock, and keep captions factual.
+
+## Settings
+Contact person, phone, WhatsApp number (where enquiries are sent), email, address, business hours, Instagram, Facebook, YouTube and LinkedIn links, and an **announcement bar** at the top of every page. Empty fields fall back to the built-in defaults.
+
+## Enquiries
+Every enquiry sent from the basket is saved with a reference number (e.g. `VS-261113-K7QPM`), which also appears in the customer’s WhatsApp message.
+- Filter by status, or search by reference, name or mobile.
+- Open an enquiry to see the items, call or WhatsApp the customer, set the **status** (Received → Contacted → Quoted → Order confirmed / Closed / Cancelled) and keep **internal notes**. Customers never see the notes.
+- For registered customers you can credit **reward points** right there.
+
+## Customers & reward points
+Customers create their own accounts (mobile number + password) under the person icon → **Create an account**. They see their enquiry history, status and points under **My account**. Customer accounts are completely separate from admin access.
+- **Reward points:** open a customer → enter `+500` (credit) or `-200` (redeem) with a reason. The customer sees the reason in their history. The balance can’t go below zero.
+- **Forgotten password:** open the customer → **Create reset link** → **Send on WhatsApp**. The link works once, within 48 hours.
+- **Disable account:** switch **Account enabled** off. They are signed out everywhere immediately.
+
+## Admin users (owner only)
+Add a person’s email and role. Also allow that email in the Cloudflare Access policy (see CLOUDFLARE_SETUP.md); both checks must pass. Switching a user to inactive blocks them immediately. You can’t remove your own owner access, and there is always at least one owner.
 
 ## Signing out
 Click **Sign out** in the admin bar. On shared computers, always sign out.

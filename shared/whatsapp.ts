@@ -26,10 +26,11 @@ export function enquiryTotalPaise(lines: EnquiryLine[]): { total: number; priced
   return { total, priced };
 }
 
-export function buildEnquiryMessage(customer: EnquiryCustomer, lines: EnquiryLine[], now = new Date()): string {
+export function buildEnquiryMessage(customer: EnquiryCustomer, lines: EnquiryLine[], now = new Date(), reference?: string): string {
   const out: string[] = [];
   out.push("*Product enquiry — VERDI SOLARR SOLUTION*");
   out.push(`Date: ${now.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`);
+  if (reference) out.push(`Reference: ${reference}`);
   out.push("");
   out.push(`Name: ${customer.name}`);
   if (customer.business) out.push(`Business: ${customer.business}`);

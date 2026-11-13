@@ -6,10 +6,13 @@
 //   edge cache miss -> 1 D1 row (the snapshot)
 //   no snapshot yet -> one rebuild (~1.3k rows today), then 1 row thereafter.
 
-import type { PublicCatalogue, PublicPrice, PublicProduct, PublicSpec, RevalidatedItem } from "../shared/types";
+import { SITE_SETTING_KEYS, type PublicCatalogue, type PublicPrice, type PublicProduct, type PublicSpec, type RevalidatedItem } from "../shared/types";
 import type { RevalidateRequest } from "../shared/schemas";
 import type { Env } from "./env";
 import { nowIso } from "./http";
+
+/** Snapshot format version. Older snapshots (without field photos/settings) are rebuilt on read. */
+export const SNAPSHOT_SCHEMA = 2;
 
 /** Media abstraction: static deployment assets vs. R2 objects. */
 export function mediaUrl(storageKey: string): string {
@@ -65,8 +68,8 @@ const PRODUCT_SELECT = `
 
 /** Build the public catalogue from normalised tables. Only public fields are selected. */
 export async function buildCatalogue(env: Env, version: number): Promise<PublicCatalogue> {
-  const [brands, categories, products, specs, media] = await env.DB.batch([
-    env.DB.prepare("SELECT BrandId, BrandSlug, BrandName, Description FROM Brands WHERE IsActive = 1 ORDER BY BrandName"),
+  const [brands, categories, products, specs, media, photos, settings] = await env.DB.batch([
+    env.DB.prepare("SELECT BrandId, BrandSlug, BrandName, Description, Website, LogoStorageKey FROM Brands WHERE IsActive = 1 ORDER BY SortOrder, BrandName"),
     env.DB.prepare("SELECT CategoryId, CategorySlug, CategoryName, Description, SortOrder FROM Categories WHERE IsActive = 1 ORDER BY SortOrder, CategoryName"),
     env.DB.prepare(`${PRODUCT_SELECT} ORDER BY p.CategoryId, p.SeriesKey, p.ProductId`),
     env.DB.prepare(
@@ -79,6 +82,8 @@ export async function buildCatalogue(env: Env, version: number): Promise<PublicC
        FROM ProductMedia m JOIN Products p ON p.ProductId = m.ProductId AND p.IsActive = 1
        ORDER BY m.ProductId, m.IsPrimary DESC, m.SortOrder`,
     ),
+    env.DB.prepare("SELECT StorageKey, Caption, Tag, IsTall FROM FieldPhotos WHERE IsActive = 1 ORDER BY SortOrder, PhotoId"),
+    env.DB.prepare("SELECT SettingKey, SettingValue FROM SiteSettings"),
   ]);
 
   const specMap = new Map<number, PublicSpec[]>();
@@ -108,12 +113,25 @@ export async function buildCatalogue(env: Env, version: number): Promise<PublicC
   const productRows = products.results as unknown as ProductRow[];
   const usedBrandIds = new Set(productRows.map((p) => p.BrandId));
 
+  const settingMap: Record<string, string> = {};
+  for (const r of settings.results as { SettingKey: string; SettingValue: string }[]) {
+    if ((SITE_SETTING_KEYS as readonly string[]).includes(r.SettingKey)) settingMap[r.SettingKey] = r.SettingValue;
+  }
+
   return {
+    schema: SNAPSHOT_SCHEMA,
     version,
     publishedAt: nowIso(),
     brands: (brands.results as Record<string, unknown>[])
       .filter((b) => usedBrandIds.has(b.BrandId as number))
-      .map((b) => ({ id: b.BrandId as number, slug: b.BrandSlug as string, name: b.BrandName as string, description: (b.Description as string) ?? null })),
+      .map((b) => ({
+        id: b.BrandId as number,
+        slug: b.BrandSlug as string,
+        name: b.BrandName as string,
+        description: (b.Description as string) ?? null,
+        logo: b.LogoStorageKey ? mediaUrl(b.LogoStorageKey as string) : null,
+        website: (b.Website as string) ?? null,
+      })),
     categories: (categories.results as Record<string, unknown>[]).map((c) => ({
       id: c.CategoryId as number,
       slug: c.CategorySlug as string,
@@ -143,6 +161,13 @@ export async function buildCatalogue(env: Env, version: number): Promise<PublicC
         specs: specMap.get(r.ProductId) ?? [],
       }),
     ),
+    fieldPhotos: (photos.results as Record<string, unknown>[]).map((f) => ({
+      src: mediaUrl(f.StorageKey as string),
+      caption: f.Caption as string,
+      tag: f.Tag as string,
+      tall: f.IsTall === 1,
+    })),
+    settings: settingMap,
   };
 }
 
@@ -174,7 +199,8 @@ export async function publishCatalogue(env: Env): Promise<{ version: number; pay
 /** Read the snapshot (1 row). Builds it on first use. */
 export async function getPublishedCatalogue(env: Env): Promise<{ version: number; payload: string }> {
   const row = await env.DB.prepare("SELECT Version, PayloadJson FROM PublishedCatalogue WHERE Id = 1").first<{ Version: number; PayloadJson: string }>();
-  if (row) return { version: row.Version, payload: row.PayloadJson };
+  // JSON.stringify keeps insertion order, so a current snapshot always starts with the schema marker.
+  if (row && row.PayloadJson.startsWith(`{"schema":${SNAPSHOT_SCHEMA},`)) return { version: row.Version, payload: row.PayloadJson };
   return publishCatalogue(env);
 }
 

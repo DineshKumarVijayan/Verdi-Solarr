@@ -2,13 +2,14 @@ import { ArrowRight, Pause, Play } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { FIELD_PHOTOS } from "../../pages/field-data";
+import { useFieldPhotos } from "../../lib/site";
 import { m } from "../motion";
 
 /** Full-bleed looping drone footage with a field-photo filmstrip teaser. */
 export function VideoBand() {
   const ref = useRef<HTMLVideoElement>(null);
   const reduce = useReducedMotion();
+  const FIELD_PHOTOS = useFieldPhotos();
   const [playing, setPlaying] = useState(false);
 
   // Only load/play when on screen (saves bandwidth); never autoplay with reduced motion.
@@ -69,7 +70,6 @@ export function VideoBand() {
           ))}
         </div>
       </div>
-      <p className="absolute top-3 right-4 text-[9px] text-paper/40">Video: Nova lv / Pexels</p>
     </section>
   );
 }

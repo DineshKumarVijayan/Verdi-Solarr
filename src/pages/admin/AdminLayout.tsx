@@ -1,10 +1,22 @@
-import { LayoutDashboard, LogOut, ShieldAlert, Tags } from "lucide-react";
+import { ClipboardList, Images, LayoutDashboard, Layers, LogOut, Package, Settings, ShieldAlert, ShieldCheck, Tags, Users } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router";
 import type { AdminIdentity } from "../../../shared/types";
 import { Spinner } from "../../components/ui";
 import { api, ApiError } from "../../lib/api";
 import { usePageMeta } from "../../lib/seo";
+
+const NAV = [
+  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/admin/products", label: "Products", icon: Package },
+  { to: "/admin/prices", label: "Prices", icon: Tags },
+  { to: "/admin/catalogue", label: "Brands & categories", icon: Layers },
+  { to: "/admin/field-photos", label: "Field photos", icon: Images },
+  { to: "/admin/enquiries", label: "Enquiries", icon: ClipboardList },
+  { to: "/admin/customers", label: "Customers", icon: Users },
+  { to: "/admin/settings", label: "Settings", icon: Settings },
+  { to: "/admin/users", label: "Admin users", icon: ShieldCheck, owner: true },
+];
 
 const AdminCtx = createContext<AdminIdentity | null>(null);
 export const useAdmin = () => useContext(AdminCtx)!;
@@ -61,13 +73,12 @@ export default function AdminLayout() {
       <div className="border-b border-line bg-ink text-paper">
         <div className="container-x flex flex-wrap items-center gap-3 py-3">
           <span className="rounded-full bg-sun-400 px-2.5 py-0.5 font-mono text-[10px] font-semibold tracking-widest text-ink uppercase">Admin</span>
-          <nav aria-label="Admin" className="flex gap-1">
-            <NavLink end to="/admin" className={({ isActive }) => `inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm ${isActive ? "bg-white/10" : "text-paper/70 hover:text-paper"}`}>
-              <LayoutDashboard className="size-4" /> Dashboard
-            </NavLink>
-            <NavLink to="/admin/prices" className={({ isActive }) => `inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm ${isActive ? "bg-white/10" : "text-paper/70 hover:text-paper"}`}>
-              <Tags className="size-4" /> Prices
-            </NavLink>
+          <nav aria-label="Admin" className="scrollbar-none -mx-1 order-last flex min-w-0 basis-full gap-1 overflow-x-auto px-1">
+            {NAV.filter((n) => !n.owner || admin.role === "owner").map((n) => (
+              <NavLink key={n.to} end={n.end} to={n.to} className={({ isActive }) => `inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm whitespace-nowrap ${isActive ? "bg-white/10 text-paper" : "text-paper/70 hover:text-paper"}`}>
+                <n.icon className="size-4" /> {n.label}
+              </NavLink>
+            ))}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-xs text-paper/60">
             <span className="hidden sm:inline">

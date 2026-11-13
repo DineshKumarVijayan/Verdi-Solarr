@@ -8,6 +8,7 @@ export interface Env {
   ASSETS: Fetcher;
   PUBLIC_LIMITER?: RateLimiter;
   ADMIN_LIMITER?: RateLimiter;
+  AUTH_LIMITER?: RateLimiter;
   ENVIRONMENT: string;
   ACCESS_TEAM_DOMAIN: string;
   ACCESS_AUD: string;

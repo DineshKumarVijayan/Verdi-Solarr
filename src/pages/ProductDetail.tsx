@@ -12,7 +12,7 @@ import { useBasket } from "../lib/basket";
 import { keySpecs, seriesSiblings, useCatalogue } from "../lib/catalogue";
 import { MAX_COMPARE, useCompare } from "../lib/compare";
 import { usePageMeta } from "../lib/seo";
-import { SITE } from "../site";
+import { useSite } from "../lib/site";
 
 const PAIRS: Record<string, string[]> = {
   "solar-panels": ["solar-inverters", "solar-dc-cables", "power-optimisers"],
@@ -50,6 +50,7 @@ export default function ProductDetail() {
 }
 
 function Detail({ product, all, brandName, cat }: { product: PublicProduct; all: PublicProduct[]; brandName: string; cat?: { id: number; slug: string; name: string } }) {
+  const SITE = useSite();
   const basket = useBasket();
   const compare = useCompare();
   const toast = useToast();

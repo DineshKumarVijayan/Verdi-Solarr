@@ -1,9 +1,10 @@
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import { WhatsAppIcon } from "../components/WhatsAppIcon";
 import { usePageMeta } from "../lib/seo";
-import { SITE } from "../site";
+import { useSite } from "../lib/site";
 
 export default function Contact() {
+  const SITE = useSite();
   usePageMeta("Contact VERDI SOLARR SOLUTION", `Call or WhatsApp ${SITE.phoneDisplay}, email ${SITE.email}. ${SITE.addressOneLine}.`);
   return (
     <div className="container-x py-12">
