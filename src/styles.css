@@ -232,3 +232,40 @@
 @media (prefers-reduced-motion: reduce) {
   .hero-sweep::before, .hero-glint { animation: none; display: none; }
 }
+
+/* ---- Select / dropdown: custom chevron, properly inset from the edge ------ */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23566370' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 1rem;
+  padding-right: 2.6rem !important;
+  cursor: pointer;
+}
+select::-ms-expand { display: none; }
+
+/* ---- Marquee ----------------------------------------------------------------- */
+@keyframes marquee { to { transform: translateX(-50%); } }
+.marquee-track { animation: marquee var(--marquee-duration, 40s) linear infinite; width: max-content; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+
+/* ---- Hero light: rotating sun rays + dust motes -------------------------------- */
+.sun-rays {
+  background: repeating-conic-gradient(from 0deg, rgba(255, 214, 140, 0.16) 0deg 3deg, transparent 3deg 14deg);
+  mask-image: radial-gradient(circle, #000 0%, transparent 62%);
+  -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 62%);
+  animation: spin 90s linear infinite;
+  mix-blend-mode: screen;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes mote {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  15% { opacity: 0.9; }
+  100% { transform: translate3d(var(--dx, 30px), -220px, 0); opacity: 0; }
+}
+.mote { animation: mote var(--d, 9s) ease-in-out infinite; animation-delay: var(--delay, 0s); }
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track, .sun-rays, .mote { animation: none; }
+}

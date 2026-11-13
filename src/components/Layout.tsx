@@ -15,6 +15,7 @@ const NAV = [
   { to: "/products", label: "Products" },
   { to: "/learn", label: "Learn" },
   { to: "/solar-tools", label: "Solar Tools" },
+  { to: "/in-the-field", label: "In the Field" },
   { to: "/contact", label: "Contact" },
 ];
 
@@ -53,13 +54,13 @@ export function Layout() {
           <Link to="/" aria-label="VERDI SOLARR SOLUTION — home" className="shrink-0">
             <Logo dark={isHome} />
           </Link>
-          <nav aria-label="Primary" className="ml-6 hidden items-center gap-1 md:flex">
+          <nav aria-label="Primary" className="ml-2 hidden items-center gap-0.5 lg:flex xl:ml-6 xl:gap-1">
             {NAV.map((n) => (
               <NavLink
                 key={n.to}
                 to={n.to}
                 className={({ isActive }) =>
-                  `rounded-full px-3.5 py-2 text-sm font-medium transition ${
+                  `whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition xl:px-3.5 ${
                     isActive ? (isHome ? "bg-white/10" : "bg-ink text-paper") : isHome ? "text-paper/75 hover:text-paper" : "text-ink/70 hover:text-ink"
                   }`
                 }
@@ -72,13 +73,13 @@ export function Layout() {
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              className={`hidden items-center gap-2 rounded-full border px-3 py-2 text-sm lg:flex ${isHome ? "border-white/15 text-paper/70 hover:border-white/35" : "border-line bg-card text-muted hover:border-ink/30"}`}
+              className={`hidden items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 text-sm xl:flex ${isHome ? "border-white/15 text-paper/70 hover:border-white/35" : "border-line bg-card text-muted hover:border-ink/30"}`}
               data-testid="open-search"
             >
               <Search className="size-4" /> Search products
               <kbd className="ml-4 rounded border border-current/20 px-1.5 font-mono text-[10px] opacity-70">Ctrl K</kbd>
             </button>
-            <button type="button" onClick={() => setPaletteOpen(true)} className={`rounded-full p-2.5 lg:hidden ${isHome ? "hover:bg-white/10" : "hover:bg-paper-2"}`} aria-label="Search products">
+            <button type="button" onClick={() => setPaletteOpen(true)} className={`rounded-full p-2.5 xl:hidden ${isHome ? "hover:bg-white/10" : "hover:bg-paper-2"}`} aria-label="Search products">
               <Search className="size-5" />
             </button>
             {compare.ids.length > 0 && (
@@ -100,13 +101,13 @@ export function Layout() {
                 {basket.count}
               </span>
             </Link>
-            <button type="button" className={`rounded-full p-2.5 md:hidden ${isHome ? "hover:bg-white/10" : "hover:bg-paper-2"}`} onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-controls="mobile-nav" aria-label="Menu">
+            <button type="button" className={`rounded-full p-2.5 lg:hidden ${isHome ? "hover:bg-white/10" : "hover:bg-paper-2"}`} onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-controls="mobile-nav" aria-label="Menu">
               {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
             </button>
           </div>
         </div>
         {menuOpen && (
-          <nav id="mobile-nav" aria-label="Mobile" className={`border-t md:hidden ${isHome ? "border-white/10" : "border-line"}`}>
+          <nav id="mobile-nav" aria-label="Mobile" className={`border-t lg:hidden ${isHome ? "border-white/10" : "border-line"}`}>
             <ul className="container-x grid gap-1 py-3">
               {[{ to: "/", label: "Home" }, ...NAV, { to: "/compare", label: "Compare" }, { to: "/admin", label: "Staff / admin sign-in" }].map((n) => (
                 <li key={n.to}>
@@ -170,6 +171,7 @@ function Footer() {
             <li><Link to="/learn" className="hover:text-paper">Solar Learning Hub</Link></li>
             <li><Link to="/learn/myths-vs-facts" className="hover:text-paper">Myths vs Facts</Link></li>
             <li><Link to="/solar-tools" className="hover:text-paper">Solar Tools</Link></li>
+            <li><Link to="/in-the-field" className="hover:text-paper">In the field</Link></li>
             <li><Link to="/solar-tools/kit-builder" className="hover:text-paper">Kit Builder</Link></li>
             <li><Link to="/compare" className="hover:text-paper">Compare products</Link></li>
             <li><Link to="/enquiry" className="hover:text-paper">Enquiry basket</Link></li>

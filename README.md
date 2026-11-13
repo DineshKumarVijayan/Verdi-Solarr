@@ -23,7 +23,7 @@ One Cloudflare application: a React single-page app served as static assets, plu
 - **Contact**: floating WhatsApp (official glyph) and Call buttons, plus a header staff menu with admin sign-in.
 - **Solar tools**: appliance load, sizing and savings, roof fit, kit builder (with datasheet-based compatibility checks), battery, losses, orientation and a system explorer. All maths runs in the browser.
 - **Integrated admin** (`/admin`): Cloudflare Access sign-in, a dashboard, and price editing with optimistic concurrency, history and an audit log.
-- **SEO**: 98 prerendered routes with unique titles, canonical URLs, Product and Breadcrumb JSON-LD, sitemap and robots.
+- **SEO**: 99 prerendered routes with unique titles, canonical URLs, Product and Breadcrumb JSON-LD, sitemap and robots.
 
 ## Local development
 
@@ -70,6 +70,19 @@ tests/unit, tests/e2e    Vitest and Playwright suites
 - **Product images** (`public/images/products/`): extracted from the supplied manufacturer datasheet PDFs, plus the Panasonic TOPCon 620/625 Wp poster. Mapping: `seriesImages` in `data/catalogue.mjs`, seeded to `ProductMedia`. Categories without a supplied image fall back to a labelled illustration.
 - **Site photos** (`public/images/site/`): supplied installation and stock photos, cropped to remove overlaid text and watermarks.
 - Third-party infographics (LinkedIn posts and others) were used **only as information sources**. Their facts are rewritten in our own interactive lessons, and the images themselves are not republished.
+
+### Stock media (self-hosted, free commercial licences)
+
+| File | Source | Licence |
+|---|---|---|
+| `public/media/hero-solar-farm-golden-*.webp` | “Aerial view of a solar farm reflecting low sun”, Bernd Dittrich, unsplash.com/photos/bheTycKOh9Q | Unsplash License (commercial use, no attribution required; credited on-page anyway) |
+| `public/media/rooftop-array-aerial.mp4` (+ poster) | “Expansive Aerial View of Solar Panel Array”, Nova lv, pexels.com/video/29941043 (14 s excerpt, re-encoded 1600 px) | Pexels License (free use, attribution not required) |
+
+The hero photo is mirrored and overlaid with CSS/Motion effects (sun rays, glow, glint, dust motes, slow zoom, pointer parallax). The video loads only when scrolled into view and never autoplays for reduced-motion users.
+
+## Pages
+
+`/` home · `/products` · `/category/:slug` · `/products/:slug` · `/compare` · `/enquiry` · `/learn` · `/learn/:lesson` · `/solar-tools/:tool` · `/in-the-field` (photo gallery + manufacturer quality testing) · `/contact` · `/admin` · `/admin/prices`
 
 ## Assets still needed from the business
 

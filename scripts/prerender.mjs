@@ -175,6 +175,11 @@ page("/contact", {
   jsonld: [organization],
   body: `${nav}<h1>Contact VERDI SOLARR SOLUTION</h1>${contact}`,
 });
+page("/in-the-field", {
+  title: "In the field — solar hardware on Indian rooftops",
+  description: "Photos of solar modules, inverters, junction boxes and mounting in real rooftop installations, plus manufacturer quality testing.",
+  body: `${nav}<h1>In the field</h1><p>Solar modules, inverters, junction boxes and mounting structures installed on Indian rooftops, and Panasonic module quality testing.</p>`,
+});
 page("/enquiry", { title: "Enquiry basket", description: "Review your product enquiry and send it on WhatsApp.", noindex: true, body: `${nav}<h1>Enquiry basket</h1>` });
 page("/compare", { title: "Compare solar products", description: "Compare specifications side by side.", noindex: true, body: `${nav}<h1>Compare products</h1>` });
 

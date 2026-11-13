@@ -161,3 +161,23 @@ test("learning hub: open a lesson, interact, go to next lesson", async ({ page }
   await page.getByTestId("next-lesson").click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("MC4 connectors done right");
 });
+
+test("in-the-field gallery filters and opens a lightbox", async ({ page }) => {
+  await page.goto("/in-the-field");
+  const all = await page.getByTestId("field-photo").count();
+  expect(all).toBeGreaterThan(5);
+  await page.getByRole("tab", { name: "Inverters" }).click();
+  await expect(page.getByTestId("field-photo")).toHaveCount(2);
+  await page.getByTestId("field-photo").first().click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button", { name: "Next photo" }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toBeHidden();
+});
+
+test("home catalogue showcase switches category", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("tab", { name: /Solar DC Cables/ }).click();
+  await expect(page.getByRole("heading", { level: 3, name: "Solar DC Cables" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Explore solar dc cables/i })).toHaveAttribute("href", "/category/solar-dc-cables");
+});
