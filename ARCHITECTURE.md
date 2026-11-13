@@ -3,7 +3,7 @@
 ```
 Browser ──► Cloudflare edge
              ├─ Static assets (HTML, JS, CSS, PDFs, pdf.js data)  ← no Worker invocation, free & unlimited
-             │    • 74 prerendered SEO pages (products/x.html, category/x.html …)
+             │    • 98 prerendered SEO pages (products/x.html, category/x.html …)
              │    • SPA fallback index.html for /admin and client routes
              └─ /api/*  ──► Worker (worker/index.ts)
                    ├─ GET  /api/catalogue            public, edge-cached snapshot (1 D1 row on miss)

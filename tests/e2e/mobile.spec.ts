@@ -11,7 +11,7 @@ for (const path of ["/", "/products", "/products/anchor-ino-residential-single-p
 
 test("mobile navigation menu and fullscreen datasheet dialog", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Menu" }).click();
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
   await page.locator("#mobile-nav").getByRole("link", { name: "Learn" }).click();
   await expect(page).toHaveURL(/\/learn/);
   await page.goto("/products/anchor-solar-dc-cable-4-sq-mm");

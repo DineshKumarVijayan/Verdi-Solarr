@@ -1,4 +1,5 @@
-import { LayoutGrid, List, MessageCircle, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
+import { FilterX, LayoutGrid, List, Search, SlidersHorizontal, X } from "lucide-react";
+import { WhatsAppIcon } from "../components/WhatsAppIcon";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { search, type SearchFilters } from "../../shared/search";
@@ -94,7 +95,7 @@ export default function Products() {
 
   const emptyCategory = routeCategory && (countByCategory.get(routeCategory.id) ?? 0) === 0;
   const filterPanel = (
-    <FilterPanel filters={filters} categorySlug={categorySlug} update={update} />
+    <FilterPanel filters={filters} categorySlug={categorySlug} update={update} onClear={clearAll} activeCount={activeCount} />
   );
 
   return (
@@ -128,7 +129,7 @@ export default function Products() {
             rel="noopener"
             href={`${SITE.whatsappUrl}?text=${encodeURIComponent(`Hello VERDI SOLARR, I would like to enquire about ${routeCategory!.name}.`)}`}
           >
-            <MessageCircle className="size-4" /> Enquire on WhatsApp
+            <WhatsAppIcon className="size-4" /> Enquire on WhatsApp
           </a>
         </div>
       ) : (
@@ -177,9 +178,10 @@ export default function Products() {
               <p className="num text-sm text-muted" aria-live="polite" data-testid="result-count">
                 {loading ? "Loading catalogue…" : `${hits.length} ${hits.length === 1 ? "product" : "products"}`}
               </p>
+              <ActiveChips filters={filters} q={q} categorySlug={categorySlug} update={update} setQ={updateQ} />
               {(activeCount > 0 || q) && (
-                <button type="button" onClick={clearAll} className="inline-flex items-center gap-1 text-xs font-semibold text-verdi-700 hover:underline">
-                  <RotateCcw className="size-3" /> Clear all
+                <button type="button" onClick={clearAll} className="btn-ghost btn-sm ml-auto !border-danger/30 !text-danger hover:!bg-danger-bg" data-testid="clear-filters">
+                  <FilterX className="size-3.5" /> Clear filters
                 </button>
               )}
             </div>
@@ -225,7 +227,30 @@ export default function Products() {
   );
 }
 
-function FilterPanel({ filters, categorySlug, update }: { filters: SearchFilters; categorySlug?: string; update: (p: Record<string, string | null>) => void }) {
+function ActiveChips({ filters, q, categorySlug, update, setQ }: { filters: SearchFilters; q: string; categorySlug?: string; update: (p: Record<string, string | null>) => void; setQ: (v: string) => void }) {
+  const { data } = useCatalogue();
+  const chips: { label: string; clear: () => void }[] = [];
+  if (q) chips.push({ label: `“${q}”`, clear: () => setQ("") });
+  for (const b of filters.brands) chips.push({ label: data?.brands.find((x) => x.slug === b)?.name ?? b, clear: () => update({ brand: filters.brands.filter((x) => x !== b).join(",") || null }) });
+  if (!categorySlug)
+    for (const c of filters.categories) chips.push({ label: data?.categories.find((x) => x.slug === c)?.name ?? c, clear: () => update({ cat: filters.categories.filter((x) => x !== c).join(",") || null }) });
+  if (filters.phase) chips.push({ label: filters.phase === "single" ? "Single phase" : "Three phase", clear: () => update({ phase: null }) });
+  if (filters.minPower != null || filters.maxPower != null) chips.push({ label: `${filters.minPower ?? 0}–${filters.maxPower ?? "∞"} W`, clear: () => update({ pmin: null, pmax: null }) });
+  if (filters.minPricePaise != null || filters.maxPricePaise != null)
+    chips.push({ label: `₹${filters.minPricePaise != null ? filters.minPricePaise / 100 : 0}–${filters.maxPricePaise != null ? filters.maxPricePaise / 100 : "∞"}`, clear: () => update({ rmin: null, rmax: null }) });
+  if (filters.pricedOnly) chips.push({ label: "Listed prices only", clear: () => update({ priced: null }) });
+  return (
+    <>
+      {chips.map((c) => (
+        <button key={c.label} type="button" onClick={c.clear} className="chip !border-verdi-300 !bg-verdi-50 !py-0.5" aria-label={`Remove filter ${c.label}`}>
+          {c.label} <X className="size-3" />
+        </button>
+      ))}
+    </>
+  );
+}
+
+function FilterPanel({ filters, categorySlug, update, onClear, activeCount }: { filters: SearchFilters; categorySlug?: string; update: (p: Record<string, string | null>) => void; onClear: () => void; activeCount: number }) {
   const { data, countByCategory } = useCatalogue();
   const toggle = (key: "brand" | "cat", current: string[], v: string) => {
     const next = current.includes(v) ? current.filter((x) => x !== v) : [...current, v];
@@ -234,6 +259,14 @@ function FilterPanel({ filters, categorySlug, update }: { filters: SearchFilters
   const showPhase = !categorySlug || categorySlug === "solar-inverters";
   return (
     <div className="grid gap-7">
+      <div className="flex items-center justify-between border-b border-line pb-3">
+        <p className="flex items-center gap-2 text-sm font-semibold">
+          <SlidersHorizontal className="size-4" /> Filters {activeCount > 0 && <span className="num rounded-full bg-verdi-600 px-1.5 text-[10px] text-white">{activeCount}</span>}
+        </p>
+        <button type="button" onClick={onClear} disabled={activeCount === 0} className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-danger hover:bg-danger-bg disabled:text-subtle disabled:hover:bg-transparent" title="Clear all filters">
+          <FilterX className="size-3.5" /> Clear
+        </button>
+      </div>
       <fieldset>
         <legend className="eyebrow mb-3">Manufacturer</legend>
         <div className="grid gap-2">

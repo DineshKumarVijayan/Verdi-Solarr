@@ -1,4 +1,5 @@
-import { Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import { WhatsAppIcon } from "../components/WhatsAppIcon";
 import { usePageMeta } from "../lib/seo";
 import { SITE } from "../site";
 
@@ -11,7 +12,7 @@ export default function Contact() {
       <p className="mt-3 max-w-xl text-muted">For product availability, project quantities, pricing and delivery, WhatsApp is the fastest way to reach us.</p>
       <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <a href={SITE.whatsappUrl} target="_blank" rel="noopener" className="card group p-6 transition hover:shadow-[var(--shadow-lift)]">
-          <MessageCircle className="size-6 text-verdi-600" />
+          <WhatsAppIcon className="size-6 text-verdi-600" />
           <h2 className="mt-4 font-semibold">WhatsApp</h2>
           <p className="num mt-1 text-sm text-muted">{SITE.phoneDisplay}</p>
           <span className="mt-4 inline-block text-sm font-semibold text-verdi-700 group-hover:underline">Start a chat →</span>

@@ -16,6 +16,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { brands, categories, flattenProducts, series } from "../data/catalogue.mjs";
+const lessonData = JSON.parse(readFileSync("data/lessons.json", "utf8"));
 
 const OUT = "dist/client";
 const SITE_URL = (process.env.SITE_URL ?? "").replace(/\/+$/, "");
@@ -141,8 +142,16 @@ for (const p of products) {
 page("/learn", {
   title: "Solar Learning Hub — TOPCon vs PERC, MPPT, datasheets, ACDB/DCDB",
   description: "Visual, interactive solar explanations: how panels and inverters work, on-grid vs hybrid, TOPCon vs PERC, bifacial modules, MPPT, datasheet terms, cables, earthing, degradation and myths.",
-  body: `${nav}<h1>Solar Learning Hub</h1><ul><li>How solar panels work</li><li>On-grid vs off-grid vs hybrid systems</li><li>Monocrystalline vs polycrystalline; P-type vs N-type; PERC vs TOPCon; bifacial modules; module efficiency</li><li>How solar inverters work and MPPT explained</li><li>Understanding datasheets: Voc, Isc, Vmp, Imp, temperature coefficients, NOCT</li><li>ACDB vs DCDB, solar cable basics, MC4 connectors</li><li>Earthing, lightning arresters and surge protection</li><li>Degradation, solar losses and maintenance</li><li>Myths vs facts</li><li>Anchor by Panasonic warranty registration</li></ul>`,
+  body: `${nav}<h1>Solar Learning Hub</h1><ul>${lessonData.lessons.map((l) => `<li><a href="/learn/${l.slug}">${esc(l.title)}</a>: ${esc(l.summary)}</li>`).join("")}</ul>`,
 });
+for (const l of lessonData.lessons) {
+  page(`/learn/${l.slug}`, {
+    title: `${l.title} — Solar Learning Hub`,
+    description: l.summary,
+    jsonld: [{ "@context": "https://schema.org", "@type": "LearningResource", name: l.title, description: l.summary, timeRequired: `PT${l.minutes}M`, inLanguage: "en-IN", isAccessibleForFree: true, educationalLevel: "Beginner to intermediate" }, crumbs([["Home", "/"], ["Learn", "/learn"], [l.title, `/learn/${l.slug}`]])],
+    body: `${nav}<article><h1>${esc(l.title)}</h1><p>${esc(l.summary)}</p><h2>Key takeaways</h2><ul>${l.takeaways.map((t) => `<li>${esc(t)}</li>`).join("")}</ul><p><a href="/learn">All solar lessons</a></p></article>`,
+  });
+}
 const tools = [
   ["consumption", "Appliance consumption calculator", "Estimate daily and monthly kWh and your electricity bill from your appliances."],
   ["sizing", "Solar capacity & savings calculator", "Estimate the solar system size, generation, savings and payback for your consumption."],

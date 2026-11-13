@@ -1,11 +1,12 @@
-import { Check, ChevronDown, Download, FileText, GitCompareArrows, MessageCircle, Minus, Plus } from "lucide-react";
+import { Check, ChevronDown, Download, FileText, GitCompareArrows, Minus, Plus } from "lucide-react";
+import { WhatsAppIcon } from "../components/WhatsAppIcon";
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import type { PublicProduct } from "../../shared/types";
 import { DatasheetButton, useDatasheet } from "../components/Datasheet";
 import { PriceTag } from "../components/PriceTag";
 import { ProductCard } from "../components/ProductCard";
-import { ProductVisual } from "../components/ProductVisual";
+import { ProductGallery } from "../components/ProductGallery";
 import { Spinner, useToast } from "../components/ui";
 import { useBasket } from "../lib/basket";
 import { keySpecs, seriesSiblings, useCatalogue } from "../lib/catalogue";
@@ -98,7 +99,7 @@ function Detail({ product, all, brandName, cat }: { product: PublicProduct; all:
 
       <section className="container-x mt-6 grid gap-10 lg:grid-cols-[1.05fr_1fr]">
         <div className="grid content-start gap-4">
-          <ProductVisual product={product} categorySlug={cat?.slug ?? ""} size="hero" label="Illustration · product photo coming soon" />
+          <ProductGallery product={product} categorySlug={cat?.slug ?? ""} />
           {product.datasheet && (
             <div className="card flex flex-wrap items-center gap-4 p-4">
               <div className="grid size-12 place-items-center rounded-xl bg-danger-bg text-danger">
@@ -178,7 +179,7 @@ function Detail({ product, all, brandName, cat }: { product: PublicProduct; all:
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <a href={`${SITE.whatsappUrl}?text=${encodeURIComponent(waText)}`} target="_blank" rel="noopener" className="btn-ghost btn-sm">
-                <MessageCircle className="size-3.5" /> Quick WhatsApp enquiry
+                <WhatsAppIcon className="size-3.5" /> Quick WhatsApp enquiry
               </a>
               <button
                 type="button"
@@ -267,7 +268,7 @@ function Detail({ product, all, brandName, cat }: { product: PublicProduct; all:
             <p className="font-semibold text-ink">Need help choosing?</p>
             <p className="mt-1">
               Try the <Link className="text-verdi-700 underline" to="/solar-tools/kit-builder">Kit Builder</Link> or the{" "}
-              <Link className="text-verdi-700 underline" to="/learn#datasheets">datasheet decoder</Link>, or call {SITE.contactPerson} on{" "}
+              <Link className="text-verdi-700 underline" to="/learn/datasheet-decoder">datasheet decoder</Link>, or call {SITE.contactPerson} on{" "}
               <a className="text-verdi-700 underline" href={SITE.phoneHref}>
                 {SITE.phoneDisplay}
               </a>

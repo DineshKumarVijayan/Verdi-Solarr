@@ -233,3 +233,14 @@ describe("kit compatibility", () => {
     expect(c.some((x) => x.level === "error" && /too large for optimiser/.test(x.title))).toBe(true);
   });
 });
+
+import { residentialSubsidy } from "../../shared/calculators";
+describe("PM Surya Ghar residential subsidy", () => {
+  it("follows ₹30k/kW for 2 kW, ₹18k for 3rd kW, capped at ₹78k", () => {
+    expect(residentialSubsidy(1)).toBe(30000);
+    expect(residentialSubsidy(2)).toBe(60000);
+    expect(residentialSubsidy(3)).toBe(78000);
+    expect(residentialSubsidy(10)).toBe(78000);
+    expect(residentialSubsidy(2.5)).toBe(69000);
+  });
+});

@@ -7,13 +7,7 @@ import type { PublicProduct } from "../../shared/types";
 export function ProductVisual({ product, categorySlug, size = "card", label }: { product: PublicProduct; categorySlug: string; size?: "card" | "hero" | "thumb"; label?: string }) {
   const img = product.images[0];
   const h = size === "hero" ? "aspect-[4/3]" : size === "thumb" ? "aspect-square" : "aspect-[4/3]";
-  if (img) {
-    return (
-      <div className={`relative ${h} overflow-hidden rounded-2xl bg-paper-2`}>
-        <img src={img.url} alt={img.alt ?? product.name} loading="lazy" decoding="async" className="absolute inset-0 size-full object-contain p-4" />
-      </div>
-    );
-  }
+  if (img) return <ProductImage url={img.url} alt={img.alt ?? product.name} className={h} eager={size === "hero"} />;
   return (
     <div className={`relative ${h} overflow-hidden rounded-2xl bg-linear-to-br from-ink-3 to-ink`} role="img" aria-label={`Illustration of ${categoryNoun(categorySlug)} — product photo coming soon`}>
       <div className="absolute inset-0 grid-bg opacity-70" />
@@ -23,6 +17,27 @@ export function ProductVisual({ product, categorySlug, size = "card", label }: {
       {size !== "thumb" && (
         <span className="absolute bottom-2.5 left-3 font-mono text-[9px] tracking-[0.2em] text-paper/45 uppercase">{label ?? "Illustration"}</span>
       )}
+    </div>
+  );
+}
+
+/** Transparent studio cut-outs get a soft backdrop + shadow; photographs fill the frame. */
+export function isCutout(url: string) {
+  return /inverter|optimizer\.|mono-perc/.test(url);
+}
+
+export function ProductImage({ url, alt, className = "aspect-[4/3]", eager = false }: { url: string; alt: string; className?: string; eager?: boolean }) {
+  const cutout = isCutout(url);
+  return (
+    <div className={`relative ${className} overflow-hidden rounded-2xl ${cutout ? "bg-[radial-gradient(120%_90%_at_50%_15%,#ffffff_0%,#eef3ea_55%,#dfe7da_100%)]" : "bg-ink"}`}>
+      {cutout && <div className="absolute inset-x-[18%] bottom-[7%] h-[8%] rounded-[50%] bg-ink/25 blur-xl" aria-hidden="true" />}
+      <img
+        src={url}
+        alt={alt}
+        loading={eager ? "eager" : "lazy"}
+        decoding="async"
+        className={`absolute inset-0 size-full transition-transform duration-700 ease-out group-hover:scale-[1.05] ${cutout ? "object-contain p-[9%] drop-shadow-[0_18px_22px_rgba(10,24,34,0.22)]" : "object-cover"}`}
+      />
     </div>
   );
 }

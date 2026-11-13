@@ -191,3 +191,10 @@ export function powerAtTemperature(pmaxStc: number, tempCoeffPctPerC: number, ce
 export function stringVocAtTemp(vocStc: number, tempCoeffVocPctPerC: number, cellC: number, modulesInSeries: number): number {
   return vocStc * (1 + (tempCoeffVocPctPerC / 100) * (cellC - 25)) * modulesInSeries;
 }
+
+/** PM Surya Ghar residential CFA (as published 2024): ₹30,000/kW up to 2 kW, ₹18,000 for the 3rd kW, capped at ₹78,000. Verify current rules on pmsuryaghar.gov.in. */
+export function residentialSubsidy(kw: number): number {
+  const first = Math.min(kw, 2) * 30000;
+  const third = Math.min(Math.max(kw - 2, 0), 1) * 18000;
+  return Math.min(78000, Math.round(first + third));
+}

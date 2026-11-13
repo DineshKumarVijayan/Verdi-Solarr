@@ -117,3 +117,47 @@ test("admin routes are not indexed and robots meta is set", async ({ page }) => 
   await page.goto("/admin");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
 });
+
+test("header account menu exposes staff/admin sign-in", async ({ page }) => {
+  await page.goto("/products");
+  await page.getByTestId("account-menu").click();
+  await expect(page.getByTestId("admin-signin-link")).toHaveAttribute("href", "/admin");
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("admin-signin-link")).toBeHidden();
+});
+
+test("floating WhatsApp and Call buttons link to the official number", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByTestId("fab-whatsapp")).toHaveAttribute("href", "https://wa.me/918939277997");
+  await expect(page.getByTestId("fab-call")).toHaveAttribute("href", "tel:+918939277997");
+});
+
+test("clear filters button resets every filter", async ({ page }) => {
+  await page.goto("/products?brand=solaredge&phase=single&q=inverter");
+  await expect(page.getByTestId("result-count")).toHaveText(/2 products/);
+  await page.getByTestId("clear-filters").click();
+  await expect(page.getByTestId("result-count")).toHaveText(/45 products/);
+  await expect(page).toHaveURL(/\/products$/);
+});
+
+test("product gallery shows real image and opens a large preview", async ({ page }) => {
+  await page.goto("/products/anchor-stellar-three-phase-grid-tie-inverter-5ktl3x");
+  const img = page.getByTestId("gallery-main").locator("img");
+  await expect(img).toHaveAttribute("src", /anchor-stellar-inverter\.webp/);
+  await page.getByTestId("gallery-main").click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+});
+
+test("learning hub: open a lesson, interact, go to next lesson", async ({ page }) => {
+  await page.goto("/learn");
+  await expect(page.getByTestId("lesson-card")).toHaveCount(24);
+  await page.getByRole("tab", { name: "Wiring & safety" }).click();
+  await expect(page.getByTestId("lesson-card")).toHaveCount(5);
+  await page.getByRole("link", { name: /Solar cables & ohmic losses/ }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Solar cables & ohmic losses");
+  await page.getByRole("radio", { name: "6 mm²" }).click();
+  await expect(page.getByText("3.39 Ω/km", { exact: false })).toBeVisible();
+  await page.getByTestId("next-lesson").click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("MC4 connectors done right");
+});

@@ -63,7 +63,7 @@ Do not modify any other domains or zones in the account.
 ## 5. Verification status (be explicit)
 | Item | Status |
 |---|---|
-| Local build, typecheck, 40 unit tests, 20 Playwright tests (desktop + mobile) against the production build with CSP | ✅ verified locally (Workers runtime via miniflare + local D1) |
+| Local build, typecheck, 41 unit tests, 25 Playwright tests (desktop + mobile) against the production build with CSP | ✅ verified locally (Workers runtime via miniflare + local D1) |
 | Seed idempotency (prices untouched on re-run) | ✅ verified locally |
 | Cloudflare deploy, remote D1, Workers Builds | ⏳ not yet performed (requires the owner’s Cloudflare login) |
 | Cloudflare Access login and JWT verification with a real token | ⏳ must be verified on the deployed domain |

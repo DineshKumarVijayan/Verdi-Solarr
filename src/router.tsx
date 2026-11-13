@@ -2,6 +2,7 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Outlet } from "react-router";
 import { DatasheetProvider } from "./components/Datasheet";
 import { Layout } from "./components/Layout";
+import { MotionProvider } from "./components/motion";
 import { Spinner, ToastProvider } from "./components/ui";
 import { BasketProvider } from "./lib/basket";
 import { CatalogueProvider } from "./lib/catalogue";
@@ -13,6 +14,7 @@ const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const Compare = lazy(() => import("./pages/Compare"));
 const Enquiry = lazy(() => import("./pages/Enquiry"));
 const Learn = lazy(() => import("./pages/Learn"));
+const LearnLesson = lazy(() => import("./pages/LearnLesson"));
 const Tools = lazy(() => import("./pages/Tools"));
 const Contact = lazy(() => import("./pages/Contact"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -36,6 +38,7 @@ function Page({ children }: { children: ReactNode }) {
 
 function Providers() {
   return (
+    <MotionProvider>
     <ToastProvider>
       <CatalogueProvider>
         <BasketProvider>
@@ -47,6 +50,7 @@ function Providers() {
         </BasketProvider>
       </CatalogueProvider>
     </ToastProvider>
+    </MotionProvider>
   );
 }
 
@@ -64,6 +68,7 @@ export const router = createBrowserRouter([
           { path: "/compare", element: <Page><Compare /></Page> },
           { path: "/enquiry", element: <Page><Enquiry /></Page> },
           { path: "/learn", element: <Page><Learn /></Page> },
+          { path: "/learn/:lesson", element: <Page><LearnLesson /></Page> },
           { path: "/solar-tools", element: <Page><Tools /></Page> },
           { path: "/solar-tools/:tool", element: <Page><Tools /></Page> },
           { path: "/contact", element: <Page><Contact /></Page> },

@@ -608,6 +608,34 @@ function moduleSpecs({ wp, vmp, voc, imp, isc, eff, noct }) {
   return s;
 }
 
+
+/**
+ * Product images (manufacturer imagery). Sources: images embedded in the supplied manufacturer
+ * datasheet PDFs, and the Panasonic TOPCon 620/625 Wp poster supplied by the business.
+ * First image = primary. Stored as static assets; D1 holds only the references.
+ */
+export const seriesImages = {
+  "anchor-topcon-600-630": [{ src: "/images/products/anchor-topcon-panels.webp", alt: "Anchor by Panasonic N-Type TOPCon dual-glass bifacial modules" }],
+  "anchor-perc-540-555": [{ src: "/images/products/anchor-mono-perc-bifacial.webp", alt: "Anchor by Panasonic Mono PERC bifacial module, front view" }],
+  "anchor-reno": [{ src: "/images/products/anchor-reno-inverter.webp", alt: "Anchor RENO single-phase residential PV inverter" }],
+  "anchor-ino": [{ src: "/images/products/anchor-ino-inverter.webp", alt: "Anchor INO single-phase residential PV inverter" }],
+  "anchor-stellar": [{ src: "/images/products/anchor-stellar-inverter.webp", alt: "Anchor Stellar three-phase grid-tie inverter" }],
+  "anchor-lumina": [{ src: "/images/products/anchor-lumina-inverter.webp", alt: "Anchor Lumina three-phase grid-tied inverter" }],
+  "solaredge-hd-wave": [{ src: "/images/products/solaredge-hd-wave-inverter.webp", alt: "SolarEdge single-phase inverter with HD-Wave technology" }],
+  "solaredge-s-series": [
+    { src: "/images/products/solaredge-s-series-optimizer.webp", alt: "SolarEdge S-Series power optimizer" },
+    { src: "/images/products/solaredge-s-series-optimizer-drawing.webp", alt: "SolarEdge S-Series power optimizer dimension drawing" },
+  ],
+  "anchor-solar-dc-cable": [
+    { src: "/images/products/anchor-solar-dc-cable-coil.webp", alt: "Anchor by Panasonic solar DC cable coil" },
+    { src: "/images/products/anchor-solar-dc-cable-section.webp", alt: "Anchor by Panasonic solar DC cable with tinned copper conductor" },
+  ],
+  "anchor-aio-street-light": [
+    { src: "/images/products/anchor-street-light-day.webp", alt: "Anchor all-in-one solar LED street lights" },
+    { src: "/images/products/anchor-street-light-night.webp", alt: "Anchor solar LED street light illuminating a path at night" },
+  ],
+};
+
 /** Flatten series → product rows (used by seed + prerender). */
 export function flattenProducts() {
   const out = [];
@@ -635,6 +663,7 @@ export function flattenProducts() {
         description: s.description,
         highlights: s.highlights,
         datasheet: s.datasheet,
+        images: seriesImages[s.key] ?? [],
         featured: !!s.featured,
         priceUnit: v.priceUnit ?? "per piece",
         specs: [...v.specs, ...s.shared].map(([key, label, value, unit, group], i) => ({

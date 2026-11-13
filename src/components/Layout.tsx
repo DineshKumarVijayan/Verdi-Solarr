@@ -1,4 +1,7 @@
-import { ClipboardList, GitCompareArrows, Mail, MapPin, Menu, MessageCircle, Phone, Search, X } from "lucide-react";
+import { ClipboardList, GitCompareArrows, Mail, MapPin, Menu, Phone, Search, X } from "lucide-react";
+import { AccountMenu } from "./AccountMenu";
+import { ContactFabs } from "./ContactFabs";
+import { WhatsAppIcon } from "./WhatsAppIcon";
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
 import { useBasket } from "../lib/basket";
@@ -84,6 +87,7 @@ export function Layout() {
                 <span className="num absolute -top-0.5 -right-0.5 grid size-5 place-items-center rounded-full bg-verdi-500 text-[10px] font-bold text-white">{compare.ids.length}</span>
               </Link>
             )}
+            <AccountMenu dark={isHome} />
             <Link
               to="/enquiry"
               className={`relative inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold ${isHome ? "bg-sun-400 text-ink hover:bg-sun-300" : "bg-ink text-paper hover:bg-ink-3"}`}
@@ -104,9 +108,9 @@ export function Layout() {
         {menuOpen && (
           <nav id="mobile-nav" aria-label="Mobile" className={`border-t md:hidden ${isHome ? "border-white/10" : "border-line"}`}>
             <ul className="container-x grid gap-1 py-3">
-              {[{ to: "/", label: "Home" }, ...NAV, { to: "/compare", label: "Compare" }].map((n) => (
+              {[{ to: "/", label: "Home" }, ...NAV, { to: "/compare", label: "Compare" }, { to: "/admin", label: "Staff / admin sign-in" }].map((n) => (
                 <li key={n.to}>
-                  <NavLink to={n.to} end className={({ isActive }) => `block rounded-xl px-3 py-3 text-base font-medium ${isActive ? "bg-verdi-600 text-white" : ""}`}>
+                  <NavLink to={n.to} end reloadDocument={n.to === "/admin"} className={({ isActive }) => `block rounded-xl px-3 py-3 text-base font-medium ${isActive ? "bg-verdi-600 text-white" : ""}`}>
                     {n.label}
                   </NavLink>
                 </li>
@@ -121,15 +125,7 @@ export function Layout() {
       </main>
 
       <Footer />
-      <a
-        href={SITE.whatsappUrl}
-        target="_blank"
-        rel="noopener"
-        className="fixed right-4 bottom-4 z-30 grid size-13 place-items-center rounded-full bg-[#1f9d55] text-white shadow-[var(--shadow-lift)] transition hover:scale-105 sm:right-6 sm:bottom-6"
-        aria-label="Chat with VERDI SOLARR on WhatsApp"
-      >
-        <MessageCircle className="size-6" />
-      </a>
+      <ContactFabs />
       <SearchPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <ScrollRestoration />
     </div>
@@ -149,7 +145,7 @@ function Footer() {
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <a href={SITE.whatsappUrl} target="_blank" rel="noopener" className="btn-sun btn-sm">
-              <MessageCircle className="size-3.5" /> WhatsApp us
+              <WhatsAppIcon className="size-3.5" /> WhatsApp us
             </a>
             <a href={SITE.phoneHref} className="btn-ghost-dark btn-sm">
               <Phone className="size-3.5" /> Call
@@ -172,7 +168,7 @@ function Footer() {
           <h2 className="font-mono text-[0.7rem] tracking-[0.18em] text-paper/45 uppercase">Explore</h2>
           <ul className="mt-4 grid gap-2 text-sm">
             <li><Link to="/learn" className="hover:text-paper">Solar Learning Hub</Link></li>
-            <li><Link to="/learn#myths" className="hover:text-paper">Myths vs Facts</Link></li>
+            <li><Link to="/learn/myths-vs-facts" className="hover:text-paper">Myths vs Facts</Link></li>
             <li><Link to="/solar-tools" className="hover:text-paper">Solar Tools</Link></li>
             <li><Link to="/solar-tools/kit-builder" className="hover:text-paper">Kit Builder</Link></li>
             <li><Link to="/compare" className="hover:text-paper">Compare products</Link></li>

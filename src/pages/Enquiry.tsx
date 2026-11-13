@@ -1,4 +1,5 @@
-import { AlertTriangle, ArrowRight, Check, ClipboardCopy, ClipboardList, MessageCircle, Minus, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, ClipboardCopy, ClipboardList, Minus, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { WhatsAppIcon } from "../components/WhatsAppIcon";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { formatPaise, gstLabel, lineTotalPaise } from "../../shared/money";
@@ -348,7 +349,7 @@ export default function Enquiry() {
                 {copied ? <Check className="size-4" /> : <ClipboardCopy className="size-4" />} {copied ? "Copied" : "Copy message"}
               </button>
               <a href={whatsappUrl(preview.message)} target="_blank" rel="noopener" className="btn-primary" data-testid="open-whatsapp">
-                <MessageCircle className="size-4" /> Open WhatsApp
+                <WhatsAppIcon className="size-4" /> Open WhatsApp
               </a>
             </div>
           )

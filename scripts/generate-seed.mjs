@@ -65,6 +65,11 @@ for (const p of products) {
   lines.push(
     `INSERT OR IGNORE INTO ProductMedia (ProductId, MediaType, StorageKey, Title, IsPrimary, SortOrder) SELECT ProductId, 'datasheet', ${q(p.datasheet)}, ${q(`${p.seriesName} — manufacturer datasheet`)}, 1, 0 FROM Products WHERE SKU = ${q(p.sku)};`,
   );
+  p.images.forEach((img, i) =>
+    lines.push(
+      `INSERT OR IGNORE INTO ProductMedia (ProductId, MediaType, StorageKey, AltText, IsPrimary, SortOrder) SELECT ProductId, 'image', ${q(img.src)}, ${q(img.alt)}, ${i === 0 ? 1 : 0}, ${i} FROM Products WHERE SKU = ${q(p.sku)};`,
+    ),
+  );
 }
 
 lines.push(

@@ -3,7 +3,7 @@
 This guide is for VERDI staff. You don’t need any technical knowledge.
 
 ## Signing in
-1. Open the website and click **Staff sign-in** at the very bottom of any page (or go to `/admin`).
+1. Open the website and click the **person icon** in the top bar, then **Staff / admin sign-in** (also available as **Staff sign-in** at the very bottom of any page, or go straight to `/admin`). On phones it is in the ☰ menu.
 2. Cloudflare shows a sign-in screen. Enter your work email address and type in the one-time code you receive by email.
 3. You land on the **Dashboard**. If you see “Access denied”, ask the owner to add your email address to the admin list.
 
