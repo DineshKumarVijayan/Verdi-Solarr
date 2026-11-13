@@ -8,7 +8,8 @@ One Cloudflare application: a React single-page app served as static assets, plu
 | Architecture & free-tier strategy | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Database schema, SQL examples, backups | [DATABASE.md](DATABASE.md) |
 | How staff update prices | [ADMIN_GUIDE.md](ADMIN_GUIDE.md) |
-| First-time Cloudflare setup (D1, R2, Access) | [CLOUDFLARE_SETUP.md](CLOUDFLARE_SETUP.md) |
+| Local test accounts (`npm run db:dev-users`) | Owner: mobile 9000000001 / `Owner@12345` at /admin · Customer: 9000000002 / `Customer@12345` at /account. **Local only.** |
+| First-time Cloudflare setup (D1, R2, first owner password) | [CLOUDFLARE_SETUP.md](CLOUDFLARE_SETUP.md) |
 | GitHub → Cloudflare deploys, GoDaddy domain, rollback | [DEPLOYMENT.md](DEPLOYMENT.md) |
 | Rules for AI agents / contributors | [AGENTS.md](AGENTS.md) |
 
@@ -22,7 +23,7 @@ One Cloudflare application: a React single-page app served as static assets, plu
 - **Motion**: Motion for React (lazy feature bundle). Hero photo slow-zoom, parallax product cut-outs, scroll reveals and count-ups. Respects reduced-motion settings.
 - **Contact**: floating WhatsApp (official glyph) and Call buttons, plus a header staff menu with admin sign-in.
 - **Solar tools**: appliance load, sizing and savings, roof fit, kit builder (with datasheet-based compatibility checks), battery, losses, orientation and a system explorer. All maths runs in the browser.
-- **Integrated admin** (`/admin`): Cloudflare Access sign-in, a dashboard, and price editing with optimistic concurrency, history and an audit log.
+- **Integrated admin** (`/admin`): mobile-number + password sign-in, a dashboard, and price editing with optimistic concurrency, history and an audit log.
 - **SEO**: 99 prerendered routes with unique titles, canonical URLs, Product and Breadcrumb JSON-LD, sitemap and robots.
 
 ## Local development
@@ -57,7 +58,7 @@ data/catalogue.mjs       Seed source transcribed from manufacturer PDFs (no pric
 migrations/              Versioned D1 SQL migrations
 scripts/                 Seed generator, pdf.js asset copy, SEO prerender
 shared/                  Code shared by browser + Worker: types, Zod schemas, search, money, WhatsApp, calculators
-worker/                  Cloudflare Worker: routing, Access JWT auth, catalogue publication, admin API
+worker/                  Cloudflare Worker: routing, admin & customer auth, catalogue publication, admin API
 src/                     React app (pages, components, state)
 public/datasheets/       Supplied manufacturer PDFs (served as static assets)
 public/_headers          Security & cache headers for static assets
@@ -90,4 +91,4 @@ The hero photo is mirrored and overlaid with CSS/Motion effects (sun rays, glow,
 2. ~~Logo~~ supplied.
 3. **Instagram URL.** Set `instagramUrl` in `src/site.ts` (intentionally empty).
 4. **Prices.** All 45 products start as “Price on request” until an admin enters prices.
-5. **Production domain name.** Used for `SITE_URL`, `ADMIN_ALLOWED_HOSTS` and Access.
+5. **Production domain name.** Used for `SITE_URL` and `ADMIN_ALLOWED_HOSTS`.

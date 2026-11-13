@@ -4,6 +4,7 @@ import type { AdminRole, AdminUserRow } from "../../../shared/types";
 import { Modal, Spinner, useToast } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useAdmin } from "./AdminLayout";
+import { formatMobile } from "../../../shared/admin-schemas";
 import { dt, errorText, fieldErrors, PageHead, send, Toggle } from "./kit";
 
 const ROLES: { v: AdminRole; label: string; d: string }[] = [
@@ -17,7 +18,7 @@ export default function Users() {
   const admin = useAdmin();
   const toast = useToast();
   const [users, setUsers] = useState<AdminUserRow[] | null>(null);
-  const [edit, setEdit] = useState<{ id: number | null; email: string; displayName: string; role: AdminRole; isActive: boolean } | null>(null);
+  const [edit, setEdit] = useState<{ id: number | null; email: string; mobile: string; password: string; displayName: string; role: AdminRole; isActive: boolean } | null>(null);
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export default function Users() {
     setBusy(true);
     setErrs({});
     try {
-      const body = { email: edit.email, displayName: edit.displayName, role: edit.role, isActive: edit.isActive };
+      const body = { email: edit.email, mobile: edit.mobile, password: edit.password || undefined, displayName: edit.displayName, role: edit.role, isActive: edit.isActive };
       const r = edit.id ? await send<{ users: AdminUserRow[] }>(`/api/admin/users/${edit.id}`, "PUT", body) : await send<{ users: AdminUserRow[] }>("/api/admin/users", "POST", body);
       setUsers(r.users);
       setEdit(null);
@@ -53,11 +54,11 @@ export default function Users() {
         title="Admin users"
         intro={
           <>
-            This table is the admin credentials list: only emails listed here (and active) can use the admin area. Sign-in itself is handled by Cloudflare Access with a one-time code or Google, so <strong>no admin passwords are stored</strong> on this website.
+            Admin credentials. Staff sign in at <span className="font-mono text-xs">/admin</span> with their mobile number and password. Passwords are stored only as salted one-way hashes, so nobody (not even the owner) can read them; set a new one here if someone forgets theirs.
           </>
         }
         actions={
-          <button type="button" className="btn-primary btn-sm" onClick={() => (setErrs({}), setEdit({ id: null, email: "", displayName: "", role: "admin", isActive: true }))} data-testid="new-admin">
+          <button type="button" className="btn-primary btn-sm" onClick={() => (setErrs({}), setEdit({ id: null, email: "", mobile: "", password: "", displayName: "", role: "admin", isActive: true }))} data-testid="new-admin">
             <Plus className="size-4" /> Add admin
           </button>
         }
@@ -84,7 +85,10 @@ export default function Users() {
                 <tr key={u.id} className="border-b border-line/60 last:border-0" data-testid="admin-user-row">
                   <td className="p-3">
                     <p className="font-semibold">{u.email}</p>
-                    {u.displayName && <p className="text-xs text-muted">{u.displayName}</p>}
+                    <p className="text-xs text-muted">
+                      {[u.displayName, u.mobile ? formatMobile(u.mobile) : "no mobile set"].filter(Boolean).join(" · ")}
+                      {!u.hasPassword && <span className="ml-1 text-danger">· no password (cannot sign in)</span>}
+                    </p>
                   </td>
                   <td className="p-3">{ROLES.find((r) => r.v === u.role)?.label}</td>
                   <td className="p-3">
@@ -92,7 +96,7 @@ export default function Users() {
                   </td>
                   <td className="p-3 text-xs text-muted">{dt(u.lastLoginAt)}</td>
                   <td className="p-3 text-right">
-                    <button type="button" className="rounded-full p-2 text-muted hover:bg-paper-2" aria-label={`Edit ${u.email}`} onClick={() => (setErrs({}), setEdit({ id: u.id, email: u.email, displayName: u.displayName ?? "", role: u.role, isActive: u.isActive }))}>
+                    <button type="button" className="rounded-full p-2 text-muted hover:bg-paper-2" aria-label={`Edit ${u.email}`} onClick={() => (setErrs({}), setEdit({ id: u.id, email: u.email, mobile: u.mobile ? formatMobile(u.mobile) : "", password: "", displayName: u.displayName ?? "", role: u.role, isActive: u.isActive }))}>
                       <Pencil className="size-4" />
                     </button>
                   </td>
@@ -104,9 +108,7 @@ export default function Users() {
       )}
       <div className="mt-6 flex max-w-3xl gap-3 rounded-2xl bg-verdi-50 p-4 text-sm">
         <ShieldCheck className="size-5 shrink-0 text-verdi-600" />
-        <p>
-          After adding someone here, also allow their email in the Cloudflare Access policy for the admin application (see <span className="font-mono text-xs">CLOUDFLARE_SETUP.md</span>). Both checks must pass. Disabling a user here blocks them immediately, even if Access still lets them in.
-        </p>
+        <p>Disabling a user or changing their password signs them out everywhere immediately. Five wrong passwords lock the account for 15 minutes.</p>
       </div>
 
       <Modal
@@ -127,8 +129,22 @@ export default function Users() {
         {edit && (
           <div className="grid gap-3 p-5">
             <div>
+              <label htmlFor="au-mobile" className="label">
+                Mobile number (used to sign in)
+              </label>
+              <input id="au-mobile" type="tel" className={`field ${errs.mobile ? "!border-danger" : ""}`} value={edit.mobile} onChange={(e) => setEdit({ ...edit, mobile: e.target.value })} />
+              {errs.mobile && <p className="mt-1 text-xs text-danger">{errs.mobile}</p>}
+            </div>
+            <div>
+              <label htmlFor="au-pw" className="label">
+                {edit.id ? "New password (leave empty to keep the current one)" : "Password"}
+              </label>
+              <input id="au-pw" type="password" autoComplete="new-password" className={`field ${errs.password ? "!border-danger" : ""}`} value={edit.password} onChange={(e) => setEdit({ ...edit, password: e.target.value })} />
+              {errs.password ? <p className="mt-1 text-xs text-danger">{errs.password}</p> : <p className="mt-1 text-xs text-subtle">At least 8 characters. Share it with the person privately.</p>}
+            </div>
+            <div>
               <label htmlFor="au-email" className="label">
-                Email (their Cloudflare Access sign-in)
+                Email (for records)
               </label>
               <input id="au-email" type="email" className={`field ${errs.email ? "!border-danger" : ""}`} value={edit.email} onChange={(e) => setEdit({ ...edit, email: e.target.value })} />
               {errs.email && <p className="mt-1 text-xs text-danger">{errs.email}</p>}

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-// Local runs authenticate via the DEV_ADMIN_EMAIL bypass (localhost + ENVIRONMENT=development only).
-// Production authentication (Cloudflare Access) must be verified on the deployed site.
+// Runs with the test owner session created in global-setup.ts (local test account).
+
 
 const ORIGIN = { Origin: process.env.BASE_URL ?? "http://localhost:5173", "Content-Type": "application/json" };
 

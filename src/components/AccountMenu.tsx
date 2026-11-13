@@ -7,7 +7,7 @@ import { m } from "./motion";
 
 /**
  * Account menu: customer sign-in / account, plus a discreet staff section.
- * Staff links use full page loads so Cloudflare Access can intercept /admin at the edge.
+ * Staff sign in on /admin with their mobile number and password.
  */
 export function AccountMenu({ dark }: { dark: boolean }) {
   const [open, setOpen] = useState(false);

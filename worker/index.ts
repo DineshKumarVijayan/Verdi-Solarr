@@ -4,8 +4,8 @@
 
 import { RevalidateSchema } from "../shared/schemas";
 import type { AdminIdentity } from "../shared/types";
-import { dashboard, listPrices, priceHistory, recordLogin, updatePrice } from "./admin";
-import { assertSameOrigin, requireAdmin } from "./auth";
+import { dashboard, listPrices, priceHistory, updatePrice } from "./admin";
+import { adminLogin, adminLogout, assertSameOrigin, requireAdmin } from "./auth";
 import { handleCatalogue, revalidate } from "./catalogue";
 import * as content from "./content";
 import * as customers from "./customers";
@@ -95,6 +95,16 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   }
 
   // ------------------------------------------------------------------- admin
+  if (path === "/api/admin/login" && method === "POST") {
+    customers.assertSameSite(request);
+    await rateLimit(env.AUTH_LIMITER ?? env.PUBLIC_LIMITER, `admin-login:${ip}`);
+    return adminLogin(request, env, await readJson(request));
+  }
+  if (path === "/api/admin/logout" && method === "POST") {
+    customers.assertSameSite(request);
+    return adminLogout(request, env);
+  }
+
   if (path.startsWith("/api/admin/")) {
     const admin = await requireAdmin(request, env);
     if (method !== "GET") {
@@ -103,7 +113,6 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     }
 
     if (path === "/api/admin/me" && method === "GET") {
-      ctx.waitUntil(recordLogin(env, admin).catch(() => undefined));
       return json({ admin });
     }
     if (path === "/api/admin/dashboard" && method === "GET") return json(await dashboard(env));

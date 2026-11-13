@@ -34,10 +34,6 @@
   ],
   "vars": {
     "ENVIRONMENT": "production",
-    // Cloudflare Access: team domain, e.g. https://verdi.cloudflareaccess.com  (set in CLOUDFLARE_SETUP.md)
-    "ACCESS_TEAM_DOMAIN": "",
-    // Comma-separated Access Application AUD tag(s)
-    "ACCESS_AUD": "",
     // Comma-separated hostnames allowed to perform admin writes (CSRF/origin check), e.g. "verdisolarr.com,www.verdisolarr.com"
     "ADMIN_ALLOWED_HOSTS": "",
     "PUBLIC_CACHE_SECONDS": "60"

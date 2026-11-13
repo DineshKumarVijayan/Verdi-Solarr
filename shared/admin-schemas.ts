@@ -183,6 +183,23 @@ export const AdminUserInputSchema = z
     displayName: optText(80),
     role: z.enum(["owner", "admin", "price_editor", "viewer"]),
     isActive: z.boolean().default(true),
+    mobile: z
+      .string()
+      .trim()
+      .transform((v, ctx) => {
+        const n = normaliseMobile(v);
+        if (!n) {
+          ctx.addIssue({ code: "custom", message: "Enter a valid 10-digit Indian mobile number" });
+          return z.NEVER;
+        }
+        return n;
+      }),
+    /** Required when creating; when editing, empty = keep the current password. */
+    password: z
+      .string()
+      .max(128)
+      .optional()
+      .refine((v) => !v || v.length >= 8, "Use at least 8 characters"),
   })
   .strict();
 

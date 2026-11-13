@@ -11,7 +11,7 @@ Browser ──► Cloudflare edge
                    ├─ GET  /api/media/:key           R2 objects (admin uploads, edge + browser cached)
                    ├─ /api/account/*  /api/enquiries  customer accounts & enquiry records (cookie session)
                    ├─ GET  /api/health
-                   └─ /api/admin/*                   Access JWT + D1 allowlist + origin check
+                   └─ /api/admin/*                   admin session cookie + D1 AdminUsers + origin check
                          me · dashboard · prices (list) · prices/:id (PUT) · prices/:id/history
                                    │
                          Cloudflare D1 (SQLite)  ·  R2 bucket "verdi-media" (uploads)
@@ -31,7 +31,6 @@ Limits read from the official docs on 2026-11-13. Re-check them before relying o
 | D1 queries per invocation | 50 | `db.batch()` is used (it counts as one). |
 | R2 | 10 GB-month, 1 M Class A, 10 M Class B per month, free egress | Admin uploads (product images, datasheets, field photos, logos). Images are resized to ≤2000 px WebP in the browser before upload. Supplied PDFs remain static assets. |
 | Static assets | 20,000 files, 25 MiB per file | ~200 files today. The largest PDF is 4 MB. |
-| Access | Seat count not stated on the pages read. Check Zero Trust → Plans. | Only staff log in. |
 
 **When quotas are exceeded:** Worker requests over the limit return Cloudflare error 1027 for API calls. Static pages keep working, and the catalogue falls back to the copy cached in the visitor’s session. D1 errors are caught and returned as `503 capacity` with a friendly message (`worker/http.ts`). The enquiry page offers “Continue without prices” if revalidation fails, and never quotes stale prices.
 
@@ -56,8 +55,8 @@ The Vite SPA is code-split per route. pdf.js (≈440 KB) loads only when a datas
 
 | Layer | Implementation |
 |---|---|
-| Edge authentication | Cloudflare Access application on `/admin*` and `/api/admin*` (production hostnames) |
-| Server verification | `worker/auth.ts`: RS256 signature via team JWKS, `iss`, `aud`, `exp` (30 s skew), email claim. Fails **closed** (503) if Access is not configured. |
+| Admin sign-in | Mobile number + password against `AdminUsers` (PBKDF2-SHA256 hash, 100k iterations, salted). Dummy hash for unknown users; 5 failures lock for 15 min; `AUTH_LIMITER` per IP. |
+| Admin session | 32-byte random token in `__Host-vs_admin` (HttpOnly, Secure, SameSite=Strict, 12 h). Only its SHA-256 is stored (`AdminSessions`). Every `/api/admin/*` call re-checks the session and that the admin is still active; password change or deactivation revokes sessions. |
 | Authorisation | Active row in `AdminUsers` (D1). Roles: owner, admin, price_editor (can edit), viewer (read-only). |
 | CSRF / origin | Non-GET admin calls need `Origin` = request host, host in `ADMIN_ALLOWED_HOSTS`, and `Sec-Fetch-Site: same-origin`. This blocks writes from preview and workers.dev hosts. |
 | Validation | Zod `.strict()` schemas. Integer paise between 0 and ₹10 crore. GST ∈ {0, 5, 12, 18, 28}. Selling price ≤ MRP. Body ≤ 16 KB. |
@@ -65,7 +64,7 @@ The Vite SPA is code-split per route. pdf.js (≈440 KB) loads only when a datas
 | SQL | Bound parameters only. `LIKE` input is escaped. |
 | Rate limiting | Workers rate-limit bindings: 60 per minute per IP (revalidate, enquiries), 20 per minute per IP (customer sign-in and registration) and 120 per minute per admin (writes). The code tolerates a missing binding. |
 | Headers | CSP, HSTS, X-Frame-Options DENY, nosniff and Permissions-Policy (`public/_headers`). `noindex` on /admin. |
-| Secrets | None in the repo. Access identifiers are non-secret vars. `.dev.vars` is git-ignored. |
+| Secrets | None in the repo. No passwords anywhere in code; setup scripts hash before writing. `.dev.vars` is git-ignored. |
 
 ## Media strategy
 

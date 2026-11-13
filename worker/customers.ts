@@ -28,7 +28,7 @@ function cookieName(url: URL): string {
   return url.protocol === "https:" ? "__Host-vs_session" : "vs_session";
 }
 
-function readCookie(request: Request, name: string): string | null {
+export function readCookie(request: Request, name: string): string | null {
   const raw = request.headers.get("Cookie") ?? "";
   for (const part of raw.split(";")) {
     const i = part.indexOf("=");

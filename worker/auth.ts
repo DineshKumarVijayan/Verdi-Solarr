@@ -1,80 +1,90 @@
 // Admin authentication & authorisation.
 //
-// Layer 1 (edge): Cloudflare Access application protects /admin* and /api/admin* on the
-//                 production hostname(s) and redirects unauthenticated users to log in.
-// Layer 2 (here): EVERY privileged API call independently verifies the Access JWT
-//                 (signature via team JWKS, issuer, audience, expiry) — so preview URLs,
-//                 workers.dev, or a misconfigured Access path cannot bypass authentication.
-// Layer 3 (here): the verified email must be an active row in the D1 AdminUsers allowlist,
-//                 and the role must permit the action.
+// Admins sign in with mobile number (or email) + password, checked against the D1 AdminUsers table.
+//  * Passwords: salted PBKDF2-SHA256 hashes (worker/crypto.ts); never stored or logged in plaintext.
+//  * Sessions: random token in an HttpOnly, SameSite=Strict cookie; only its SHA-256 is stored (AdminSessions).
+//  * Every privileged API call re-checks the session AND that the admin is still active, then the role.
+//  * Brute force: per-IP rate limit (index.ts) + account lock after 5 failures for 15 minutes.
 
-import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from "jose";
+import { issues, LoginSchema, normaliseMobile } from "../shared/admin-schemas";
 import type { AdminIdentity, AdminRole } from "../shared/types";
+import { DUMMY_HASH, randomToken, sha256Hex, verifyPassword } from "./crypto";
+import { readCookie } from "./customers";
 import type { Env } from "./env";
-import { HttpError } from "./http";
+import { HttpError, json, nowIso } from "./http";
 
-let jwksCache: { url: string; jwks: JWTVerifyGetKey } | null = null;
+const SESSION_HOURS = 12;
+const MAX_FAILED = 5;
+const LOCK_MINUTES = 15;
 
-function getJwks(teamDomain: string): JWTVerifyGetKey {
-  const url = `${teamDomain}/cdn-cgi/access/certs`;
-  if (!jwksCache || jwksCache.url !== url) jwksCache = { url, jwks: createRemoteJWKSet(new URL(url)) };
-  return jwksCache.jwks;
-}
+export const adminCookieName = (url: URL) => (url.protocol === "https:" ? "__Host-vs_admin" : "vs_admin");
 
-export function normaliseTeamDomain(raw: string): string {
-  const t = raw.trim().replace(/\/+$/, "");
-  if (!t) return "";
-  return t.startsWith("https://") ? t : `https://${t}`;
-}
-
-const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
-
-/** Returns the verified email of the caller, or throws 401. */
-export async function verifyAccessIdentity(request: Request, env: Env): Promise<string> {
-  const url = new URL(request.url);
-
-  // Local development shortcut — impossible to trigger in production because it requires
-  // BOTH ENVIRONMENT=development (set only in .dev.vars) AND a localhost hostname.
-  if (env.ENVIRONMENT === "development" && env.DEV_ADMIN_EMAIL && LOCAL_HOSTS.has(url.hostname)) {
-    return env.DEV_ADMIN_EMAIL.toLowerCase();
-  }
-
-  const team = normaliseTeamDomain(env.ACCESS_TEAM_DOMAIN ?? "");
-  const audiences = (env.ACCESS_AUD ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (!team || audiences.length === 0) {
-    // Fail closed: never allow admin access when Access is not configured.
-    throw new HttpError(503, "auth_not_configured", "Admin sign-in is not configured for this deployment.");
-  }
-
-  const token = request.headers.get("Cf-Access-Jwt-Assertion");
-  if (!token) throw new HttpError(401, "unauthenticated", "Please sign in to continue.");
-
-  try {
-    const { payload } = await jwtVerify(token, getJwks(team), {
-      issuer: team,
-      audience: audiences,
-      algorithms: ["RS256"],
-      clockTolerance: 30,
-    });
-    const email = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : "";
-    if (!email) throw new HttpError(401, "unauthenticated", "Your sign-in token has no email identity.");
-    return email;
-  } catch (e) {
-    if (e instanceof HttpError) throw e;
-    throw new HttpError(401, "unauthenticated", "Your session is invalid or has expired. Please sign in again.");
-  }
+function adminCookie(url: URL, token: string | null): string {
+  const secure = url.protocol === "https:" ? "; Secure" : "";
+  return `${adminCookieName(url)}=${token ?? ""}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${token ? SESSION_HOURS * 3600 : 0}${secure}`;
 }
 
 export async function requireAdmin(request: Request, env: Env): Promise<AdminIdentity> {
-  const email = await verifyAccessIdentity(request, env);
-  const row = await env.DB.prepare("SELECT Email, DisplayName, Role FROM AdminUsers WHERE Email = ?1 AND IsActive = 1")
-    .bind(email)
+  const token = readCookie(request, adminCookieName(new URL(request.url)));
+  if (!token || !/^[A-Za-z0-9_-]{30,100}$/.test(token)) throw new HttpError(401, "unauthenticated", "Please sign in to continue.");
+  const row = await env.DB.prepare(
+    `SELECT a.Email, a.DisplayName, a.Role FROM AdminSessions s JOIN AdminUsers a ON a.AdminId = s.AdminId
+     WHERE s.SessionHash = ?1 AND s.ExpiresAt > ?2 AND a.IsActive = 1`,
+  )
+    .bind(await sha256Hex(token), nowIso())
     .first<{ Email: string; DisplayName: string | null; Role: AdminRole }>();
-  if (!row) throw new HttpError(403, "forbidden", "This account is not authorised to administer VERDI SOLARR.");
+  if (!row) throw new HttpError(401, "unauthenticated", "Your session has expired. Please sign in again.");
   return { email: row.Email.toLowerCase(), displayName: row.DisplayName, role: row.Role };
+}
+
+export async function adminLogin(request: Request, env: Env, body: unknown): Promise<Response> {
+  const p = LoginSchema.safeParse(body);
+  if (!p.success) throw new HttpError(422, "validation", p.error.issues[0]?.message ?? "Please check the form.", issues(p.error));
+  const mobile = normaliseMobile(p.data.login);
+  const row = await env.DB.prepare(
+    `SELECT AdminId, Email, DisplayName, Role, PasswordHash, IsActive, FailedLogins, LockedUntil FROM AdminUsers WHERE ${mobile ? "Mobile = ?1" : "Email = ?1"}`,
+  )
+    .bind(mobile ?? p.data.login.toLowerCase())
+    .first<{ AdminId: number; Email: string; DisplayName: string | null; Role: AdminRole; PasswordHash: string | null; IsActive: number; FailedLogins: number; LockedUntil: string | null }>();
+
+  const ok = await verifyPassword(p.data.password, row?.PasswordHash ?? DUMMY_HASH); // always hash: no timing hint
+  const generic = new HttpError(401, "bad_credentials", "Mobile number or password is incorrect.");
+  if (!row || !row.PasswordHash) throw generic;
+  if (row.LockedUntil && row.LockedUntil > nowIso()) throw new HttpError(429, "locked", `Too many failed attempts. Try again in ${LOCK_MINUTES} minutes.`);
+  if (!row.IsActive) throw new HttpError(403, "disabled", "This admin account is disabled.");
+  if (!ok) {
+    const failed = row.FailedLogins + 1;
+    const lock = failed >= MAX_FAILED ? new Date(Date.now() + LOCK_MINUTES * 60_000).toISOString() : null;
+    await env.DB.prepare("UPDATE AdminUsers SET FailedLogins = ?1, LockedUntil = ?2 WHERE AdminId = ?3").bind(lock ? 0 : failed, lock, row.AdminId).run();
+    throw generic;
+  }
+
+  const token = randomToken();
+  const now = new Date();
+  await env.DB.batch([
+    env.DB.prepare("DELETE FROM AdminSessions WHERE ExpiresAt < ?1").bind(now.toISOString()), // expired sessions only
+    env.DB.prepare("INSERT INTO AdminSessions (SessionHash, AdminId, CreatedAt, ExpiresAt, UserAgent) VALUES (?1, ?2, ?3, ?4, ?5)").bind(
+      await sha256Hex(token),
+      row.AdminId,
+      now.toISOString(),
+      new Date(now.getTime() + SESSION_HOURS * 3600_000).toISOString(),
+      (request.headers.get("User-Agent") ?? "").slice(0, 200),
+    ),
+    env.DB.prepare("UPDATE AdminUsers SET FailedLogins = 0, LockedUntil = NULL, LastLoginAt = ?1 WHERE AdminId = ?2").bind(now.toISOString(), row.AdminId),
+    env.DB.prepare("INSERT INTO AuditLogs (AdminIdentity, Action, EntityType, EntityId, CreatedAt) VALUES (?1, 'admin.login', 'AdminUser', ?2, ?3)").bind(row.Email.toLowerCase(), String(row.AdminId), now.toISOString()),
+  ]);
+  const res = json({ admin: { email: row.Email.toLowerCase(), displayName: row.DisplayName, role: row.Role } satisfies AdminIdentity });
+  res.headers.append("Set-Cookie", adminCookie(new URL(request.url), token));
+  return res;
+}
+
+export async function adminLogout(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  const token = readCookie(request, adminCookieName(url));
+  if (token) await env.DB.prepare("DELETE FROM AdminSessions WHERE SessionHash = ?1").bind(await sha256Hex(token)).run();
+  const res = json({ ok: true });
+  res.headers.append("Set-Cookie", adminCookie(url, null));
+  return res;
 }
 
 const CAN_EDIT_PRICES: AdminRole[] = ["owner", "admin", "price_editor"];
@@ -85,7 +95,7 @@ export function assertCanEditPrices(id: AdminIdentity): void {
 
 /**
  * CSRF / origin protection for state-changing admin requests.
- * Requires a same-origin browser request whose Origin host is explicitly allowed.
+ * Requires a same-origin browser request whose host is explicitly allowed (ADMIN_ALLOWED_HOSTS).
  */
 export function assertSameOrigin(request: Request, env: Env): void {
   const url = new URL(request.url);
@@ -102,8 +112,7 @@ export function assertSameOrigin(request: Request, env: Env): void {
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
-  const hostname = url.hostname.toLowerCase();
-  if (allowed.length === 0 || !allowed.includes(hostname)) {
+  if (allowed.length === 0 || !allowed.includes(url.hostname.toLowerCase())) {
     throw new HttpError(403, "bad_host", "Admin changes are not permitted on this hostname.");
   }
   const site = request.headers.get("Sec-Fetch-Site");

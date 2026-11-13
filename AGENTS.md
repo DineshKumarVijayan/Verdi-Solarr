@@ -13,7 +13,7 @@
 - Single Cloudflare app: static assets plus a Worker for `/api/*` only (`run_worker_first`). Keep ordinary UI events off the Worker.
 - Public data flows through the **published catalogue snapshot** (`PublishedCatalogue`, 1 row). Any admin write to catalogue data must call `publishCatalogue()` and `purgeCatalogueEdgeCache()`.
 - Never put admin-only fields (UpdatedBy, emails, audit data) in `PublicCatalogue` types or queries.
-- Every privileged endpoint: `requireAdmin()` (Access JWT + D1 allowlist), plus `assertSameOrigin()` for non-GET, plus role checks. Hiding UI is never authorisation.
+- Every privileged endpoint: `requireAdmin()` (hashed session cookie → active `AdminUsers` row), plus `assertSameOrigin()` for non-GET, plus role checks. Hiding UI is never authorisation.
 - SQL only in `worker/*` with bound parameters (`?1`). UI components never contain SQL.
 - Money: integer paise end to end (`shared/money.ts`, `rupeesToPaise`). No floats for totals.
 - Datasheet preview must render the real PDF (pdf.js). Never substitute images.

@@ -260,6 +260,8 @@ export interface AdminFieldPhoto {
 export interface AdminUserRow {
   id: number;
   email: string;
+  mobile: string | null;
+  hasPassword: boolean;
   displayName: string | null;
   role: AdminRole;
   isActive: boolean;

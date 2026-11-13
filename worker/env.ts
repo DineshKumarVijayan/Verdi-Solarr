@@ -10,10 +10,7 @@ export interface Env {
   ADMIN_LIMITER?: RateLimiter;
   AUTH_LIMITER?: RateLimiter;
   ENVIRONMENT: string;
-  ACCESS_TEAM_DOMAIN: string;
-  ACCESS_AUD: string;
+  /** Comma-separated hostnames allowed to perform admin writes (CSRF/origin check). */
   ADMIN_ALLOWED_HOSTS: string;
   PUBLIC_CACHE_SECONDS: string;
-  /** Local development only — ignored unless ENVIRONMENT=development AND host is localhost. */
-  DEV_ADMIN_EMAIL?: string;
 }

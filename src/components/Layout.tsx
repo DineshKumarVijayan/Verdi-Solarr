@@ -4,6 +4,7 @@ import { ContactFabs } from "./ContactFabs";
 import { WhatsAppIcon } from "./WhatsAppIcon";
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
+import { useAccount } from "../lib/account";
 import { useBasket } from "../lib/basket";
 import { useCatalogue } from "../lib/catalogue";
 import { useCompare } from "../lib/compare";
@@ -26,6 +27,9 @@ export function Layout() {
   const compare = useCompare();
   const loc = useLocation();
   const isHome = loc.pathname === "/";
+  const { customer } = useAccount();
+  // Signed-in customers get their own menu item (enquiry history & reward points).
+  const nav = customer ? [...NAV, { to: "/account", label: "My account" }] : NAV;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -56,7 +60,7 @@ export function Layout() {
             <Logo dark={isHome} />
           </Link>
           <nav aria-label="Primary" className="ml-2 hidden items-center gap-0.5 lg:flex xl:ml-6 xl:gap-1">
-            {NAV.map((n) => (
+            {nav.map((n) => (
               <NavLink
                 key={n.to}
                 to={n.to}
@@ -110,7 +114,7 @@ export function Layout() {
         {menuOpen && (
           <nav id="mobile-nav" aria-label="Mobile" className={`border-t lg:hidden ${isHome ? "border-white/10" : "border-line"}`}>
             <ul className="container-x grid gap-1 py-3">
-              {[{ to: "/", label: "Home" }, ...NAV, { to: "/compare", label: "Compare" }, { to: "/account", label: "My account" }, { to: "/admin", label: "Staff / admin sign-in" }].map((n) => (
+              {[{ to: "/", label: "Home" }, ...NAV, { to: "/compare", label: "Compare" }, customer ? { to: "/account", label: "My enquiries & reward points" } : { to: "/account", label: "Sign in / Create account" }, { to: "/admin", label: "Staff sign-in" }].map((n) => (
                 <li key={n.to}>
                   <NavLink to={n.to} end reloadDocument={n.to === "/admin"} className={({ isActive }) => `block rounded-xl px-3 py-3 text-base font-medium ${isActive ? "bg-verdi-600 text-white" : ""}`}>
                     {n.label}

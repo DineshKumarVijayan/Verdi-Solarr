@@ -3,11 +3,11 @@
 This guide is for VERDI staff. You don’t need any technical knowledge. Everything on the website that changes from time to time (products, brands, prices, datasheets, photos, contact details, enquiries, customers and reward points) is managed from the admin area. **No code changes are needed.**
 
 ## Signing in
-1. Click the **person icon** in the top bar → **Staff / admin sign-in**, or go to `/admin`. On phones it is in the ☰ menu.
-2. Cloudflare shows a sign-in screen. Enter your work email and type in the one-time code you receive.
-3. You land on the **Dashboard**. If you see “Access denied”, ask the owner to add you under **Admin users**.
+1. Go to `/admin` (or the person icon → **Staff / admin sign-in**; on phones it is in the ☰ menu).
+2. Enter your **mobile number** and **password**, then click **Sign in**. You stay signed in for 12 hours.
+3. Forgot your password? The owner sets a new one in **Admin users**. Five wrong attempts lock the account for 15 minutes.
 
-There are no admin passwords on this website. Cloudflare Access checks your email, and the **Admin users** list decides what you may do.
+Passwords are stored only as salted one-way hashes, so nobody can read them, including the owner and the developer. The **Admin users** list also decides what each person may do.
 
 | Role | Can do |
 |---|---|
@@ -70,7 +70,7 @@ Customers create their own accounts (mobile number + password) under the person 
 - **Disable account:** switch **Account enabled** off. They are signed out everywhere immediately.
 
 ## Admin users (owner only)
-Add a person’s email and role. Also allow that email in the Cloudflare Access policy (see CLOUDFLARE_SETUP.md); both checks must pass. Switching a user to inactive blocks them immediately. You can’t remove your own owner access, and there is always at least one owner.
+Add a person’s mobile number, password, email and role, and share the password with them privately. To reset someone’s password, edit them and type a new one. Switching a user to inactive, or changing their password, signs them out everywhere immediately. You can’t remove your own owner access, and there is always at least one owner.
 
 ## Signing out
 Click **Sign out** in the admin bar. On shared computers, always sign out.

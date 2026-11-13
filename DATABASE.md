@@ -13,7 +13,8 @@ Database name: `verdi-db` · binding: `DB` · migrations: `migrations/` · money
 | `ProductPriceHistory` | Every committed price change | old/new price, MRP and GST, `ChangedBy`, `ChangedAt`, `ChangeReason` |
 | `ProductSpecifications` | Key/label/value/unit/group rows | UNIQUE(`ProductId`,`SpecificationKey`) |
 | `ProductMedia` | Images and datasheets (metadata only) | `MediaType` image/datasheet/document, `StorageKey` (`/static/path` or `r2:key`) |
-| `AdminUsers` | Admin allowlist and roles (no passwords; Access handles login) | `Email` UNIQUE NOCASE, `Role`, `IsActive`, `LastLoginAt` |
+| `AdminUsers` | Admin credentials and roles | `Email` UNIQUE NOCASE, `Mobile` UNIQUE *(0003)*, `PasswordHash` (PBKDF2, never plaintext) *(0003)*, `Role`, `IsActive`, `FailedLogins`, `LockedUntil`, `LastLoginAt` |
+| `AdminSessions` *(0003)* | Admin sign-in sessions (12 h) | `SessionHash` = SHA-256 of the cookie token |
 | `AuditLogs` | Admin actions with before/after JSON | `AdminIdentity`, `Action`, `EntityType`, `EntityId` |
 | `PublishedCatalogue` | Derived public snapshot (1 row): products, brands, categories, field photos and site settings. Safe to delete because it rebuilds itself. | `Version`, `PayloadJson` (starts with `{"schema":N`), `PublishedAt` |
 | `FieldPhotos` *(0002)* | “In the field” gallery, managed in Admin → Field photos | `StorageKey`, `Caption`, `Tag`, `IsTall`, `SortOrder`, `IsActive` |

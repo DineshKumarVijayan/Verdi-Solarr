@@ -2,7 +2,7 @@ import { expect, test, type APIRequestContext } from "@playwright/test";
 import { formatPaise } from "../../shared/money";
 
 // Admin content management + customer accounts, end to end against the local Worker + D1 + R2.
-// Local admin auth uses the DEV_ADMIN_EMAIL bypass (localhost + ENVIRONMENT=development only).
+// Admin calls use the test owner session from global-setup.ts.
 
 const BASE = process.env.BASE_URL ?? "http://localhost:5173";
 const H = { Origin: BASE, "Content-Type": "application/json" };

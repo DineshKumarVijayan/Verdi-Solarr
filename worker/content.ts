@@ -37,7 +37,7 @@ import {
   type SiteSettingKey,
 } from "../shared/types";
 import { mediaUrl, publishCatalogue, purgeCatalogueEdgeCache } from "./catalogue";
-import { randomToken } from "./crypto";
+import { hashPassword, randomToken } from "./crypto";
 import { issueResetLink, loadEnquiries, rewardLedger, toEnquiryView } from "./customers";
 import type { Env } from "./env";
 import { HttpError, nowIso } from "./http";
@@ -671,10 +671,12 @@ export async function saveSettings(env: Env, admin: AdminIdentity, body: unknown
 // ------------------------------------------------------------------ admin users (owner only)
 
 export async function listAdminUsers(env: Env): Promise<AdminUserRow[]> {
-  const r = await env.DB.prepare("SELECT AdminId, Email, DisplayName, Role, IsActive, CreatedAt, LastLoginAt FROM AdminUsers ORDER BY IsActive DESC, Role, Email").all<Record<string, unknown>>();
+  const r = await env.DB.prepare("SELECT AdminId, Email, Mobile, PasswordHash IS NOT NULL AS HasPw, DisplayName, Role, IsActive, CreatedAt, LastLoginAt FROM AdminUsers ORDER BY IsActive DESC, Role, Email").all<Record<string, unknown>>();
   return r.results.map((x) => ({
     id: x.AdminId as number,
     email: x.Email as string,
+    mobile: (x.Mobile as string) ?? null,
+    hasPassword: x.HasPw === 1,
     displayName: (x.DisplayName as string) ?? null,
     role: x.Role as AdminRole,
     isActive: x.IsActive === 1,
@@ -687,8 +689,10 @@ export async function saveAdminUser(env: Env, admin: AdminIdentity, id: number |
   requireRole(admin, ["owner"], "manage admin users");
   const v = parse(AdminUserInputSchema, body);
   const now = nowIso();
-  const before = id ? await env.DB.prepare("SELECT * FROM AdminUsers WHERE AdminId = ?1").bind(id).first<Record<string, unknown>>() : null;
+  const before = id ? await env.DB.prepare("SELECT AdminId, Email, Mobile, DisplayName, Role, IsActive FROM AdminUsers WHERE AdminId = ?1").bind(id).first<Record<string, unknown>>() : null;
   if (id && !before) throw new HttpError(404, "not_found", "Admin user not found.");
+  if (!id && !v.password) throw new HttpError(422, "validation", "Set a password for the new admin.", [{ path: "password", message: "Required (at least 8 characters)" }]);
+  const hash = v.password ? await hashPassword(v.password) : null;
   if (before && String(before.Email).toLowerCase() === admin.email && (v.role !== "owner" || !v.isActive)) {
     throw new HttpError(422, "self_lockout", "You cannot remove your own owner access. Ask another owner to do it.");
   }
@@ -696,10 +700,28 @@ export async function saveAdminUser(env: Env, admin: AdminIdentity, id: number |
     const owners = await env.DB.prepare("SELECT COUNT(*) AS n FROM AdminUsers WHERE Role = 'owner' AND IsActive = 1").first<{ n: number }>();
     if ((owners?.n ?? 0) <= 1) throw new HttpError(422, "last_owner", "At least one active owner is required.");
   }
-  const stmt = id
-    ? env.DB.prepare("UPDATE AdminUsers SET Email = ?1, DisplayName = ?2, Role = ?3, IsActive = ?4, UpdatedAt = ?5 WHERE AdminId = ?6").bind(v.email, v.displayName, v.role, b(v.isActive), now, id)
-    : env.DB.prepare("INSERT INTO AdminUsers (Email, DisplayName, Role, IsActive, CreatedAt, UpdatedAt) VALUES (?1, ?2, ?3, ?4, ?5, ?5)").bind(v.email, v.displayName, v.role, b(v.isActive), now);
-  await unique(env.DB.batch([stmt, audit(env, admin, id ? "admin_user.update" : "admin_user.create", "AdminUser", id ?? v.email, before, v, now)]), "This email is already an admin user.");
+  const stmts = [
+    id
+      ? env.DB.prepare(
+          "UPDATE AdminUsers SET Email = ?1, DisplayName = ?2, Role = ?3, IsActive = ?4, Mobile = ?5, PasswordHash = COALESCE(?6, PasswordHash), FailedLogins = CASE WHEN ?6 IS NULL THEN FailedLogins ELSE 0 END, LockedUntil = CASE WHEN ?6 IS NULL THEN LockedUntil ELSE NULL END, UpdatedAt = ?7 WHERE AdminId = ?8",
+        ).bind(v.email, v.displayName, v.role, b(v.isActive), v.mobile, hash, now, id)
+      : env.DB.prepare("INSERT INTO AdminUsers (Email, DisplayName, Role, IsActive, Mobile, PasswordHash, CreatedAt, UpdatedAt) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)").bind(
+          v.email,
+          v.displayName,
+          v.role,
+          b(v.isActive),
+          v.mobile,
+          hash,
+          now,
+        ),
+    // Never put the password (or its hash) in the audit log.
+    audit(env, admin, id ? "admin_user.update" : "admin_user.create", "AdminUser", id ?? v.email, before, { ...v, password: v.password ? "(changed)" : undefined }, now),
+  ];
+  // A new password or deactivation signs that admin out everywhere (not yourself on a self password change).
+  if (id && (hash || !v.isActive)) {
+    stmts.push(env.DB.prepare("DELETE FROM AdminSessions WHERE AdminId = ?1 AND ?2 = 0").bind(id, b(String(before!.Email).toLowerCase() === admin.email && v.isActive)));
+  }
+  await unique(env.DB.batch(stmts), "This email or mobile number is already used by another admin.");
   return { users: await listAdminUsers(env) };
 }
 
