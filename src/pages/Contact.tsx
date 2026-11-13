@@ -1,0 +1,51 @@
+import { Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { usePageMeta } from "../lib/seo";
+import { SITE } from "../site";
+
+export default function Contact() {
+  usePageMeta("Contact VERDI SOLARR SOLUTION", `Call or WhatsApp ${SITE.phoneDisplay}, email ${SITE.email}. ${SITE.addressOneLine}.`);
+  return (
+    <div className="container-x py-12">
+      <p className="eyebrow">Contact</p>
+      <h1 className="mt-2 text-4xl font-semibold sm:text-5xl">Talk to VERDI SOLARR</h1>
+      <p className="mt-3 max-w-xl text-muted">For product availability, project quantities, pricing and delivery, WhatsApp is the fastest way to reach us.</p>
+      <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <a href={SITE.whatsappUrl} target="_blank" rel="noopener" className="card group p-6 transition hover:shadow-[var(--shadow-lift)]">
+          <MessageCircle className="size-6 text-verdi-600" />
+          <h2 className="mt-4 font-semibold">WhatsApp</h2>
+          <p className="num mt-1 text-sm text-muted">{SITE.phoneDisplay}</p>
+          <span className="mt-4 inline-block text-sm font-semibold text-verdi-700 group-hover:underline">Start a chat →</span>
+        </a>
+        <a href={SITE.phoneHref} className="card group p-6 transition hover:shadow-[var(--shadow-lift)]">
+          <Phone className="size-6 text-verdi-600" />
+          <h2 className="mt-4 font-semibold">Call {SITE.contactPerson}</h2>
+          <p className="num mt-1 text-sm text-muted">{SITE.phoneDisplay}</p>
+          <span className="mt-4 inline-block text-sm font-semibold text-verdi-700 group-hover:underline">Call now →</span>
+        </a>
+        <a href={`mailto:${SITE.email}`} className="card group p-6 transition hover:shadow-[var(--shadow-lift)]">
+          <Mail className="size-6 text-verdi-600" />
+          <h2 className="mt-4 font-semibold">Email</h2>
+          <p className="mt-1 text-sm break-all text-muted">{SITE.email}</p>
+          <span className="mt-4 inline-block text-sm font-semibold text-verdi-700 group-hover:underline">Write to us →</span>
+        </a>
+        <div className="card p-6">
+          <MapPin className="size-6 text-verdi-600" />
+          <h2 className="mt-4 font-semibold">Address</h2>
+          <address className="mt-1 text-sm text-muted not-italic">
+            {SITE.address.map((l) => (
+              <span key={l} className="block">
+                {l}
+              </span>
+            ))}
+          </address>
+          <a className="mt-4 inline-block text-sm font-semibold text-verdi-700 hover:underline" target="_blank" rel="noopener" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(SITE.addressOneLine)}`}>
+            Open in Maps →
+          </a>
+        </div>
+      </div>
+      <p className="mt-8 flex items-center gap-2 text-sm text-muted">
+        <Clock className="size-4" /> Please call or message to confirm business hours before visiting.
+      </p>
+    </div>
+  );
+}
