@@ -151,6 +151,19 @@ function AuthForms() {
           <button type="submit" className="btn-primary mt-1 w-full" disabled={busy} data-testid="account-submit">
             {busy ? <Spinner className="size-4" /> : <UserRound className="size-4" />} {mode === "signin" ? "Sign in" : "Create account"}
           </button>
+          {mode !== "signin" && (
+            <p className="text-center text-[11px] leading-snug text-subtle">
+              By creating an account you agree to our{" "}
+              <Link to="/terms" className="underline">
+                terms
+              </Link>{" "}
+              and{" "}
+              <Link to="/privacy" className="underline">
+                privacy policy
+              </Link>
+              .
+            </p>
+          )}
           {mode === "signin" ? (
             <p className="text-center text-xs text-muted">
               Forgot your password?{" "}

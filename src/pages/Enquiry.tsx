@@ -386,7 +386,11 @@ export default function Enquiry() {
                 {hasFlags ? "Accept updated prices & preview" : "Check latest prices & preview"}
               </button>
               <p className="text-[11px] leading-snug text-subtle" data-testid="enquiry-record-note">
-                We keep a copy of your enquiry so our team can follow up.{" "}
+                We keep a copy of your enquiry so our team can follow up (see our{" "}
+                <Link to="/privacy" className="underline">
+                  privacy policy
+                </Link>
+                ).{" "}
                 {account ? (
                   <>
                     It will appear under{" "}

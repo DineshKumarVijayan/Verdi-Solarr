@@ -8,6 +8,7 @@
 import { formatPaise } from "../shared/money";
 import type { PublicCatalogue, PublicProduct } from "../shared/types";
 import { CATALOGUE_CACHE_KEY, handleCatalogue } from "./catalogue";
+import { PAGE_SECURITY_HEADERS } from "./http";
 import type { Env } from "./env";
 
 const BUSINESS = "VERDI SOLARR SOLUTION";
@@ -129,6 +130,7 @@ export async function productPage(request: Request, env: Env, ctx: ExecutionCont
     .transform(asset);
   const out = new Response(res.body, res);
   out.headers.set("Cache-Control", "public, max-age=0, must-revalidate"); // price in the tags must stay current
+  for (const [k, v] of Object.entries(PAGE_SECURITY_HEADERS)) out.headers.set(k, v);
   out.headers.delete("ETag");
   return out;
 }

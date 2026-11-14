@@ -283,6 +283,14 @@ function Footer() {
           <p>
             © {year} {SITE.name}. Brand names and trademarks belong to their respective owners. Specifications are taken from manufacturer datasheets.
           </p>
+          <p className="flex gap-4">
+            <Link to="/privacy" className="hover:text-paper">
+              Privacy policy
+            </Link>
+            <Link to="/terms" className="hover:text-paper">
+              Terms of use
+            </Link>
+          </p>
           <nav aria-label="Solar products near you" className="flex flex-wrap gap-x-3 gap-y-1">
             {localPages.pages.map((p) => (
               <Link key={p.slug} to={`/${p.slug}`} className="hover:text-paper/80">

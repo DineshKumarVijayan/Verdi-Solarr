@@ -5,6 +5,7 @@ import { Layout } from "./components/Layout";
 import { MotionProvider } from "./components/motion";
 import { Spinner, ToastProvider } from "./components/ui";
 import { ConfirmProvider } from "./components/confirm";
+import { RouteError } from "./components/RouteError";
 import { AccountProvider } from "./lib/account";
 import { BasketProvider } from "./lib/basket";
 import { CatalogueProvider } from "./lib/catalogue";
@@ -22,6 +23,8 @@ const Tools = lazy(() => import("./pages/Tools"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Field = lazy(() => import("./pages/Field"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Privacy = lazy(() => import("./pages/Legal").then((m) => ({ default: m.Privacy })));
+const Terms = lazy(() => import("./pages/Legal").then((m) => ({ default: m.Terms })));
 const Local = lazy(() => import("./pages/Local"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
@@ -80,8 +83,15 @@ export const router = createBrowserRouter([
     children: [
       {
         element: <Layout />,
+        errorElement: <RouteError />,
         children: [
+          {
+            // page errors show inside the site layout (header and menu stay usable)
+            errorElement: <RouteError />,
+            children: [
           { path: "/", element: <Home /> },
+          { path: "/privacy", element: <Page><Privacy /></Page> },
+          { path: "/terms", element: <Page><Terms /></Page> },
           { path: "/products", element: <Page><Products /></Page> },
           { path: "/category/:categorySlug", element: <Page><Products /></Page> },
           { path: "/products/:slug", element: <Page><ProductDetail /></Page> },
@@ -116,6 +126,8 @@ export const router = createBrowserRouter([
             ],
           },
           { path: "*", element: <Page><NotFound /></Page> },
+            ],
+          },
         ],
       },
     ],

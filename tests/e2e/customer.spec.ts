@@ -1,4 +1,9 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+/** Number of products currently published (admins add products, so never hard-code it). */
+async function liveCount(page: Page): Promise<number> {
+  return (await (await page.request.get("/api/catalogue")).json()).products.length;
+}
 
 const TOPCON_620 = "/products/anchor-n-type-topcon-dual-glass-bifacial-module-620-wp";
 
@@ -32,14 +37,14 @@ test("hero search leads to filtered, highlighted results", async ({ page }) => {
 
 test("filters sync to the URL and can be cleared", async ({ page }) => {
   await page.goto("/products");
-  await expect(page.getByTestId("result-count")).toHaveText(/45 products/);
+  await expect(page.getByTestId("result-count")).toHaveText(new RegExp(`${await liveCount(page)} products`));
   await page.getByRole("checkbox", { name: "SolarEdge" }).check();
   await expect(page).toHaveURL(/brand=solaredge/);
   await expect(page.getByTestId("result-count")).toHaveText(/6 products/);
   await page.getByRole("button", { name: "Three phase" }).click();
   await expect(page.getByTestId("result-count")).toHaveText(/0 products/);
   await page.getByRole("button", { name: "Clear all" }).first().click();
-  await expect(page.getByTestId("result-count")).toHaveText(/45 products/);
+  await expect(page.getByTestId("result-count")).toHaveText(new RegExp(`${await liveCount(page)} products`));
 });
 
 test("instant search palette supports keyboard navigation", async ({ page }) => {
@@ -140,7 +145,7 @@ test("clear filters button resets every filter", async ({ page }) => {
   await page.goto("/products?brand=solaredge&phase=single&q=inverter");
   await expect(page.getByTestId("result-count")).toHaveText(/2 products/);
   await page.getByTestId("clear-filters").click();
-  await expect(page.getByTestId("result-count")).toHaveText(/45 products/);
+  await expect(page.getByTestId("result-count")).toHaveText(new RegExp(`${await liveCount(page)} products`));
   await expect(page).toHaveURL(/\/products$/);
 });
 

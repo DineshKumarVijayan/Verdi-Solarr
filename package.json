@@ -24,8 +24,8 @@
     "deploy:production": "node scripts/deploy-production.mjs"
   },
   "dependencies": {
-    "jspdf": "^2.5.2",
-    "jspdf-autotable": "^3.8.4",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.9",
     "lucide-react": "^1.72.0",
     "motion": "^14.13.0",
     "pdfjs-dist": "^6.5.438",
