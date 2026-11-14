@@ -273,7 +273,7 @@ function Detail({ product, all, brandName, cat }: { product: PublicProduct; all:
             <p className="font-semibold text-ink">Need help choosing?</p>
             <p className="mt-1">
               Try the <Link className="text-verdi-700 underline" to="/solar-tools/kit-builder">Kit Builder</Link> or the{" "}
-              <Link className="text-verdi-700 underline" to="/learn/datasheet-decoder">datasheet decoder</Link>, or call {SITE.contactPerson} on{" "}
+              <Link className="text-verdi-700 underline" to="/learn/datasheet-decoder">datasheet decoder</Link>, or call us on{" "}
               <a className="text-verdi-700 underline" href={SITE.phoneHref}>
                 {SITE.phoneDisplay}
               </a>

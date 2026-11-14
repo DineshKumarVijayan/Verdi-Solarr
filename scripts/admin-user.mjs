@@ -1,6 +1,6 @@
 // Create or update an admin with a mobile number + password (hash computed here; plaintext never stored).
 //
-//   npm run admin:set -- --email=owner@example.com --mobile=9876543210 --password="Strong-Pass-1" [--name=Praveen] [--role=owner] [--remote]
+//   npm run admin:set -- --email=owner@example.com --mobile=9876543210 --password="Strong-Pass-1" [--name="Owner"] [--role=owner] [--remote]
 //
 // Without --remote it writes to the LOCAL dev database. Use --remote once to give the production owner a password;
 // after that, owners manage everyone else in Admin → Admin users.

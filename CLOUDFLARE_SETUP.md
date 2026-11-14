@@ -39,7 +39,7 @@ If the deploy is rejected because of the `ratelimits` block (rate-limit bindings
 ## 4. Admin sign-in (first owner password)
 Admins sign in at `/admin` with mobile number + password (no Cloudflare Access needed). After the first deploy and `npm run db:migrate:remote`, give the owner a password **once**:
 ```bash
-npm run admin:set -- --email=Verdisolarrsolution@gmail.com --mobile=8939277997 --name=Praveen --role=owner --password="<a strong password>" --remote
+npm run admin:set -- --email=Verdisolarrsolution@gmail.com --mobile=8939277997 --name=Owner --role=owner --password="<a strong password>" --remote
 ```
 The script hashes the password locally; only the hash is sent to D1. Clear the command from your shell history afterwards. Everyone else is then added by the owner in **Admin → Admin users**.
 

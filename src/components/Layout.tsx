@@ -249,7 +249,7 @@ function Footer() {
             <li className="flex gap-2.5">
               <Phone className="mt-0.5 size-4 shrink-0 text-verdi-300" />
               <a href={SITE.phoneHref} className="hover:text-paper">
-                {SITE.phoneDisplay} ({SITE.contactPerson})
+                {SITE.phoneDisplay}
               </a>
             </li>
             <li className="flex gap-2.5">

@@ -157,7 +157,7 @@ export async function buildQuotationPdf(q: Quote, site: SiteInfo, settings: Quot
     .filter(Boolean)
     .map((s) => clean(s));
   const forWrapped = doc.splitTextToSize(forLines.join("\n"), boxW - 8) as string[];
-  const byLines = [site.contactPerson ? `Contact: ${clean(site.contactPerson)}` : "", clean(site.phoneDisplay), clean(site.email)].filter(Boolean);
+  const byLines = [`Phone: ${clean(site.phoneDisplay)}`, `Email: ${clean(site.email)}`];
   const boxH = Math.max(24, 15 + Math.max(forWrapped.length, byLines.length) * 4.3);
   for (const [i, title] of ["PREPARED FOR", "FROM"].entries()) {
     const bx = M + i * (boxW + 6);
@@ -386,7 +386,7 @@ export async function buildQuotationPdf(q: Quote, site: SiteInfo, settings: Quot
   doc.line(W - M - sigW, y + 17, W - M, y + 17);
   doc.setFontSize(8.5);
   doc.setTextColor(...MUTED);
-  doc.text(clean(settings.quoteSignatory || site.contactPerson || "Authorised signatory"), W - M, y + 22, { align: "right" });
+  doc.text(clean(settings.quoteSignatory || "Authorised signatory"), W - M, y + 22, { align: "right" });
   y += bandH + 4;
   doc.setFont("helvetica", "italic");
   doc.setFontSize(9);

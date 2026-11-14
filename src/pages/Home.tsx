@@ -132,7 +132,7 @@ export default function Home() {
           {[
             { icon: FileText, t: "Real datasheets", d: "Specifications are transcribed from manufacturer PDFs, and you can open the original in one click." },
             { icon: ShieldCheck, t: "Honest pricing", d: "Listed prices come from our live database and are re-checked before every enquiry. Final quotes are confirmed by our team." },
-            { icon: WhatsAppIcon, t: "Talk to a person", d: `Speak to ${SITE.contactPerson} on ${SITE.phoneDisplay} or WhatsApp for project quantities and delivery.` },
+            { icon: WhatsAppIcon, t: "Talk to a person", d: `Call or WhatsApp us on ${SITE.phoneDisplay} for project quantities and delivery.` },
           ].map((x) => (
             <StaggerItem key={x.t} className="w-[80%] shrink-0 snap-start md:w-auto">
               <div className="flex gap-4">

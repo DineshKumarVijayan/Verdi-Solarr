@@ -20,7 +20,7 @@ export default function Contact() {
         </a>
         <a href={SITE.phoneHref} className="card group p-6 transition hover:shadow-[var(--shadow-lift)]">
           <Phone className="size-6 text-verdi-600" />
-          <h2 className="mt-4 font-semibold">Call {SITE.contactPerson}</h2>
+          <h2 className="mt-4 font-semibold">Call us</h2>
           <p className="num mt-1 text-sm text-muted">{SITE.phoneDisplay}</p>
           <span className="mt-4 inline-block text-sm font-semibold text-verdi-700 group-hover:underline">Call now →</span>
         </a>

@@ -237,7 +237,7 @@ function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }
                 {text("quoteGstin", "GSTIN", "15 characters, e.g. 33ABCDE1234F1Z5.", { ph: "Not registered / leave blank", mono: true })}
                 {text("quoteValidDays", "Default validity (days)", "For new quotations. Default 15.", { ph: "15", inputMode: "numeric" })}
               </div>
-              {text("quoteSignatory", "Signatory name", "Printed under the signature line.", { ph: "e.g. Praveen" })}
+              {text("quoteSignatory", "Signatory name", "Printed under the signature line. Leave blank to print “Authorised signatory”.", { ph: "Authorised signatory" })}
             </>,
           )}
 
@@ -508,7 +508,7 @@ function Editor({ id }: { id: number | null }) {
       `For any questions, call or WhatsApp us on ${SITE.phoneDisplay}.`,
       ``,
       `Regards,`,
-      SITE.contactPerson ? `${SITE.contactPerson}, ${SITE.name}` : SITE.name,
+      SITE.name,
     ].join("\n");
 
   /** Upload the PDF (for the link), then open WhatsApp with the customer's number and a ready message. */

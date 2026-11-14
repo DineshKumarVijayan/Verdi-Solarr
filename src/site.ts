@@ -1,7 +1,7 @@
 export const SITE = {
   name: "VERDI SOLARR SOLUTION",
   shortName: "VERDI SOLARR",
-  contactPerson: "Praveen",
+  contactPerson: "", // no personal name is shown anywhere; the phone number is enough
   phoneDisplay: "+91 89392 77997",
   phoneHref: "tel:+918939277997",
   whatsappUrl: "https://wa.me/918939277997",
