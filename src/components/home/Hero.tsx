@@ -1,20 +1,24 @@
 import { ArrowRight, Search } from "lucide-react";
 import { AnimatePresence, useMotionValue, useSpring, useTransform } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { useCatalogue } from "../../lib/catalogue";
 import { useSite } from "../../lib/site";
 import { CountUp, m } from "../motion";
 import { WhatsAppIcon } from "../WhatsAppIcon";
 
-const HEADLINE = ["Solar", "hardware,", "specified", "to", "the", "last", "volt."];
-const QUICK = ["620 Wp TOPCon", "550 Wp", "5 kW three phase", "3 kW single phase", "Optimizer", "6 sq mm"];
-const SHOWCASE = [
-  { img: "/images/products/anchor-stellar-inverter.webp", name: "Anchor Stellar", spec: "3–15 kW · three phase · 98.6% max.", to: "/products?q=stellar" },
-  { img: "/images/products/anchor-reno-inverter.webp", name: "Anchor RENO", spec: "1–3.3 kW · single phase · IP65", to: "/products?q=reno" },
-  { img: "/images/products/anchor-mono-perc-bifacial.webp", name: "Mono PERC bifacial", spec: "540–555 Wp · up to 21.52%", to: "/products?q=perc" },
-  { img: "/images/products/solaredge-s-series-optimizer.webp", name: "SolarEdge S-Series", spec: "440–650 W optimisers · 99.5%", to: "/products?q=optimizer" },
-  { img: "/images/products/anchor-lumina-inverter.webp", name: "Anchor Lumina", spec: "20–25 kW · export control", to: "/products?q=lumina" },
-];
+// Headline specs for the showcase card, in order of preference.
+const KEY_SPECS = ["power_wp", "ac_power_w", "rated_input_w", "led_power_w", "max_efficiency_pct", "efficiency_pct", "phase", "cross_section_sqmm"];
+
+// Rotating end of the headline: "Power your next …"
+const ROTATE = ["rooftop.", "factory.", "EPC project.", "solar farm.", "big order."];
+
+/** "A", "A and B", "A, B and C", or "N leading brands". */
+function brandLine(names: string[]): string {
+  if (names.length === 0) return "trusted manufacturers";
+  if (names.length > 3) return `${names.length} leading brands`;
+  return names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
 
 // dust motes (deterministic positions so SSR/prerender & client agree)
 const MOTES = Array.from({ length: 18 }, (_, i) => ({
@@ -30,11 +34,40 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
   const SITE = useSite();
   const nav = useNavigate();
   const [q, setQ] = useState("");
+  const { data, brand } = useCatalogue();
+
+  // Everything below comes from the live catalogue, so new brands/products/categories appear automatically.
+  const showcase = useMemo(() => {
+    const seen = new Set<string>();
+    const out: { img: string; name: string; spec: string; to: string }[] = [];
+    const products = [...(data?.products ?? [])].sort((x, y) => Number(y.featured) - Number(x.featured));
+    for (const p of products) {
+      const img = p.images[0]?.url;
+      const key = p.seriesKey ?? String(p.id);
+      if (!img || seen.has(key)) continue;
+      seen.add(key);
+      const spec = [brand(p.brandId)?.name, ...KEY_SPECS.map((k) => p.specs.find((x) => x.k === k)).filter((x) => !!x).slice(0, 2).map((x) => `${x!.v}${x!.u ? " " + x!.u : ""}`)].filter(Boolean).join(" · ");
+      out.push({ img, name: p.seriesName ?? p.name, spec, to: `/products/${p.slug}` });
+      if (out.length === 6) break;
+    }
+    return out;
+  }, [data, brand]);
+  const quick = useMemo(() => {
+    const counts = new Map<number, number>();
+    for (const p of data?.products ?? []) counts.set(p.categoryId, (counts.get(p.categoryId) ?? 0) + 1);
+    return (data?.categories ?? []).filter((c) => counts.get(c.id)).slice(0, 6);
+  }, [data]);
+  const brandText = brandLine((data?.brands ?? []).map((x) => x.name));
+
   const [idx, setIdx] = useState(0);
+  const [word, setWord] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setIdx((i) => (i + 1) % SHOWCASE.length), 3600);
+    const id = setInterval(() => {
+      setIdx((i) => (showcase.length ? (i + 1) % showcase.length : 0));
+      setWord((w) => (w + 1) % ROTATE.length);
+    }, 3200);
     return () => clearInterval(id);
-  }, []);
+  }, [showcase.length]);
 
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
@@ -44,7 +77,7 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
   const bgY = useTransform(sy, (v) => v * -10);
   const cardX = useTransform(sx, (v) => v * 16);
   const cardY = useTransform(sy, (v) => v * 16);
-  const item = SHOWCASE[idx];
+  const item = showcase[Math.min(idx, Math.max(0, showcase.length - 1))];
 
   return (
     <section
@@ -93,20 +126,36 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
               B2B solar supply · Chennai, Tamil Nadu
             </m.p>
             <h1 className="mt-4 text-[2.7rem] leading-[1.02] font-semibold drop-shadow-[0_4px_24px_rgba(0,0,0,0.45)] sm:text-6xl lg:text-[4.6rem]">
-              {HEADLINE.map((w, i) => (
+              {["Power", "your", "next"].map((w, i) => (
                 <m.span
-                  key={i}
-                  className={`mr-[0.22em] inline-block ${w === "specified" ? "bg-linear-to-r from-sun-200 via-sun-300 to-sun-500 bg-clip-text text-transparent [filter:drop-shadow(0_2px_14px_rgba(0,0,0,0.75))]" : ""}`}
+                  key={w}
+                  className="mr-[0.22em] inline-block"
                   initial={{ opacity: 0, y: 36, filter: "blur(8px)" }}
                   animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  transition={{ delay: 0.45 + i * 0.08, duration: 0.7, ease: [0.2, 0.7, 0.2, 1] }}
+                  transition={{ delay: 0.45 + i * 0.09, duration: 0.7, ease: [0.2, 0.7, 0.2, 1] }}
                 >
                   {w}
                 </m.span>
               ))}
+              <span className="block min-h-[1.05em]">
+                <span className="sr-only">solar project.</span>
+                <AnimatePresence mode="wait" initial={false}>
+                  <m.span
+                    key={ROTATE[word]}
+                    aria-hidden="true"
+                    className="inline-block bg-linear-to-r from-sun-200 via-sun-300 to-sun-500 bg-clip-text pb-[0.08em] whitespace-nowrap text-transparent [filter:drop-shadow(0_2px_14px_rgba(0,0,0,0.75))]"
+                    initial={{ y: 28, opacity: 0, filter: "blur(6px)" }}
+                    animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+                    exit={{ y: -24, opacity: 0, filter: "blur(6px)" }}
+                    transition={{ duration: 0.45, ease: [0.2, 0.7, 0.2, 1] }}
+                  >
+                    {ROTATE[word]}
+                  </m.span>
+                </AnimatePresence>
+              </span>
             </h1>
             <m.p className="mt-6 max-w-xl text-base leading-relaxed text-paper/80 sm:text-lg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1 }}>
-              Anchor by Panasonic and SolarEdge modules, inverters, optimisers and solar electricals for dealers, installers and EPC teams, with real manufacturer datasheets for every model.
+              Solar panels, inverters, cables and every component in between, from {brandText}. Compare real manufacturer datasheets, see live prices and send your whole order in one WhatsApp message.
             </m.p>
             <m.form
               initial={{ opacity: 0, y: 16 }}
@@ -123,15 +172,15 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
               <label htmlFor="hero-q" className="sr-only">
                 Search products
               </label>
-              <input id="hero-q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Try “620 Wp” or “5 kW three phase”" className="min-w-0 flex-1 bg-transparent py-2 text-base text-paper outline-none placeholder:text-paper/50" />
+              <input id="hero-q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by wattage, kW, model or brand" className="min-w-0 flex-1 bg-transparent py-2 text-base text-paper outline-none placeholder:text-paper/50" />
               <button className="btn-sun" type="submit">
                 Search
               </button>
             </m.form>
             <m.div className="mt-4 flex flex-wrap gap-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.4 }}>
-              {QUICK.map((s) => (
-                <Link key={s} to={`/products?q=${encodeURIComponent(s)}`} className="rounded-full border border-white/20 bg-ink/30 px-3 py-1 text-xs text-paper/85 backdrop-blur transition hover:border-sun-300 hover:text-paper">
-                  {s}
+              {quick.map((c) => (
+                <Link key={c.id} to={`/category/${c.slug}`} className="rounded-full border border-white/20 bg-ink/30 px-3 py-1 text-xs text-paper/85 backdrop-blur transition hover:border-sun-300 hover:text-paper">
+                  {c.name}
                 </Link>
               ))}
             </m.div>
@@ -146,6 +195,7 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
           </div>
 
           {/* floating glass product card cycling through real product cut-outs */}
+          {item && (
           <m.div style={{ x: cardX, y: cardY }} className="hidden justify-self-end xl:block" initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.2, duration: 0.9 }}>
             <Link to={item.to} className="group block w-[340px] rounded-[2rem] border border-white/20 bg-white/10 p-5 shadow-2xl backdrop-blur-2xl transition hover:bg-white/15">
               <div className="relative h-56">
@@ -171,7 +221,7 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
                 </m.div>
               </AnimatePresence>
               <div className="mt-4 flex gap-1.5">
-                {SHOWCASE.map((s, k) => (
+                {showcase.map((s, k) => (
                   <span key={s.name} className="h-1 flex-1 overflow-hidden rounded-full bg-white/15">
                     {k === idx && <m.span className="block h-full bg-sun-300" initial={{ width: 0 }} animate={{ width: "100%" }} transition={{ duration: 3.6, ease: "linear" }} />}
                     {k < idx && <span className="block h-full bg-sun-300/60" />}
@@ -180,6 +230,7 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
               </div>
             </Link>
           </m.div>
+          )}
         </div>
       </div>
 

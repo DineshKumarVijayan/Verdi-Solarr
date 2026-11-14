@@ -136,7 +136,7 @@ export default function Products() {
       ) : (
         <div className="mt-8 grid gap-8 lg:grid-cols-[260px_1fr]">
           <aside className="hidden lg:block" aria-label="Filters">
-            <div className="sticky top-24">{filterPanel}</div>
+            <div className="sticky top-24 -mr-2 max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain pr-2 pb-6 [scrollbar-width:thin]">{filterPanel}</div>
           </aside>
           <div>
             <div className="flex flex-wrap items-center gap-2">
