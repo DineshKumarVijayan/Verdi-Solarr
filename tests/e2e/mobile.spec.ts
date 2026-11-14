@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const path of ["/", "/in-the-field", "/products", "/products/anchor-ino-residential-single-phase-pv-inverter-5ktlx", "/enquiry", "/learn", "/solar-tools/kit-builder", "/compare", "/admin/prices"]) {
+for (const path of ["/", "/in-the-field", "/products", "/products/anchor-ino-residential-single-phase-pv-inverter-5ktlx", "/enquiry", "/learn", "/solar-tools/kit-builder", "/compare", "/admin/prices", "/solar-panels-chennai", "/account"]) {
   test(`no horizontal overflow on mobile: ${path}`, async ({ page }) => {
     await page.goto(path);
     await page.waitForLoadState("networkidle");
@@ -22,4 +22,16 @@ test("mobile navigation menu and fullscreen datasheet dialog", async ({ page }) 
   expect(box!.width).toBeGreaterThanOrEqual(page.viewportSize()!.width - 2);
   await dialog.getByRole("button", { name: "Close dialog" }).click();
   await expect(dialog).toBeHidden();
+});
+
+test("product page: sticky add-to-enquiry bar appears after scrolling and adds to the basket; gallery swipes", async ({ page }) => {
+  await page.goto("/products/anchor-n-type-topcon-dual-glass-bifacial-module-620-wp");
+  await expect(page.getByTestId("sticky-buy-bar")).toHaveCount(0);
+  await page.locator("#buy-box").evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().bottom + window.scrollY + 200));
+  const bar = page.getByTestId("sticky-buy-bar");
+  await expect(bar).toBeVisible();
+  await bar.getByRole("button", { name: "Add to enquiry" }).click();
+  await expect(page.getByTestId("basket-count")).toHaveText("1");
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
 });

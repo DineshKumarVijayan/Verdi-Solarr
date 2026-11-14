@@ -17,6 +17,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { brands, categories, flattenProducts, series } from "../data/catalogue.mjs";
 const lessonData = JSON.parse(readFileSync("data/lessons.json", "utf8"));
+const localPages = JSON.parse(readFileSync("data/local-pages.json", "utf8")).pages;
 
 const OUT = "dist/client";
 const SITE_URL = (process.env.SITE_URL ?? "").replace(/\/+$/, "");
@@ -38,7 +39,7 @@ const brandName = Object.fromEntries(brands.map((b) => [b.slug, b.name]));
 const catBySlug = Object.fromEntries(categories.map((c) => [c.slug, c]));
 const urls = [];
 
-function page(route, { title, description, body, jsonld = [], noindex = false }) {
+function page(route, { title, description, body, jsonld = [], noindex = false, image }) {
   const fullTitle = title.includes("VERDI") ? title : `${title} | VERDI SOLARR SOLUTION`;
   const head = [
     `<meta name="description" content="${esc(description)}" />`,
@@ -48,7 +49,8 @@ function page(route, { title, description, body, jsonld = [], noindex = false })
     `<meta property="og:title" content="${esc(fullTitle)}" />`,
     `<meta property="og:description" content="${esc(description)}" />`,
     SITE_URL ? `<meta property="og:url" content="${esc(abs(route))}" />` : "",
-    `<meta name="twitter:card" content="summary" />`,
+    `<meta property="og:image" content="${esc(abs(image ?? "/media/hero-solar-farm-golden-1200.webp"))}" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
     noindex ? `<meta name="robots" content="noindex, nofollow" />` : "",
     ...jsonld.map((j) => `<script type="application/ld+json">${JSON.stringify(j).replace(/</g, "\\u003c")}</script>`),
   ]
@@ -138,6 +140,21 @@ for (const p of products) {
   });
 }
 
+// ------------------------------------------------------- local landing pages
+for (const lp of localPages) {
+  const items = products.filter((p) => lp.categories.length === 0 || lp.categories.includes(p.category));
+  page(`/${lp.slug}`, {
+    title: lp.metaTitle,
+    description: lp.description,
+    jsonld: [
+      organization,
+      crumbs([["Home", "/"], [lp.title, `/${lp.slug}`]]),
+      { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: lp.faqs.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) },
+    ],
+    body: `${nav}<h1>${esc(lp.title)}</h1><p>${esc(lp.intro)}</p><h2>Products</h2><ul>${items.map((p) => `<li><a href="/products/${p.slug}">${esc(p.name)}</a>: ${esc(p.short)}</li>`).join("")}</ul><h2>Frequently asked questions</h2>${lp.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join("")}${contact}`,
+  });
+}
+
 // ------------------------------------------------------------ static pages
 page("/learn", {
   title: "Solar Learning Hub — TOPCon vs PERC, MPPT, datasheets, ACDB/DCDB",
@@ -195,4 +212,5 @@ if (SITE_URL) {
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${esc(abs(u))}</loc><lastmod>${today}</lastmod></url>`).join("\n")}\n</urlset>\n`,
   );
 }
+writeFileSync(join(OUT, "routes.json"), JSON.stringify(urls)); // used by the Worker's live sitemap.xml
 console.log(`prerendered ${urls.length} indexable routes${SITE_URL ? ` (sitemap for ${SITE_URL})` : " — set SITE_URL to emit canonical URLs and sitemap.xml"}`);

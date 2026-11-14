@@ -27,30 +27,38 @@ export type UploadKind = "image" | "datasheet" | "field" | "logo";
  * Shrink large photos in the browser before upload (max 2000 px, WebP), so the site stays fast
  * and R2 storage stays small. PDFs and already-small images are uploaded unchanged.
  */
-async function prepareImage(file: File, maxPx: number): Promise<Blob> {
+async function prepareImage(file: File, maxPx: number, forceWebp = false): Promise<Blob> {
   if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
   try {
     const bmp = await createImageBitmap(file);
     const scale = Math.min(1, maxPx / Math.max(bmp.width, bmp.height));
-    if (scale === 1 && file.type === "image/webp" && file.size < 1_500_000) return file;
+    if (!forceWebp && scale === 1 && file.type === "image/webp" && file.size < 1_500_000) return file;
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(bmp.width * scale);
     canvas.height = Math.round(bmp.height * scale);
     canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
     const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/webp", 0.86));
+    if (forceWebp) {
+      if (!blob) throw new Error("Could not create the small image copy.");
+      return blob;
+    }
     return blob && blob.size < file.size ? blob : file;
-  } catch {
+  } catch (e) {
+    if (forceWebp) throw e;
     return file;
   }
 }
 
 export async function uploadFile(file: File, kind: UploadKind): Promise<{ storageKey: string; url: string }> {
   const body = kind === "datasheet" ? file : await prepareImage(file, kind === "logo" ? 800 : 2000);
-  return api(`/api/admin/uploads?kind=${kind}`, {
-    method: "POST",
-    body,
-    headers: { "Content-Type": body.type || "application/octet-stream", "X-File-Name": encodeURIComponent(file.name).slice(0, 120) },
-  });
+  const headers = { "Content-Type": body.type || "application/octet-stream", "X-File-Name": encodeURIComponent(file.name).slice(0, 120) };
+  const up = await api<{ storageKey: string; url: string }>(`/api/admin/uploads?kind=${kind}`, { method: "POST", body, headers });
+  if (kind === "image" || kind === "field") {
+    // Small copy for phones (see src/lib/img.ts). Always WebP.
+    const small = await prepareImage(file, 800, true);
+    await api(`/api/admin/uploads?kind=${kind}&variantOf=${encodeURIComponent(up.storageKey)}`, { method: "POST", body: small, headers: { ...headers, "Content-Type": "image/webp" } });
+  }
+  return up;
 }
 
 /** Click-or-drop file picker. */

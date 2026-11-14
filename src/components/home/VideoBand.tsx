@@ -2,6 +2,7 @@ import { ArrowRight, Pause, Play } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
+import { fallbackToOriginal, srcSetFor } from "../../lib/img";
 import { useFieldPhotos } from "../../lib/site";
 import { m } from "../motion";
 
@@ -64,7 +65,7 @@ export function VideoBand() {
         <div className="marquee-track flex gap-4" style={{ ["--marquee-duration" as string]: "55s" }}>
           {[...FIELD_PHOTOS, ...FIELD_PHOTOS].map((f, k) => (
             <Link key={k} to="/in-the-field" tabIndex={k >= FIELD_PHOTOS.length ? -1 : 0} aria-hidden={k >= FIELD_PHOTOS.length} className="group relative h-40 w-60 shrink-0 overflow-hidden rounded-2xl border border-white/15 sm:h-48 sm:w-72">
-              <img src={f.src} alt={f.caption} loading="lazy" className="size-full object-cover transition duration-700 group-hover:scale-110" />
+              <img src={f.src} srcSet={srcSetFor(f.src)} sizes="300px" onError={fallbackToOriginal} decoding="async" alt={f.caption} loading="lazy" className="size-full object-cover transition duration-700 group-hover:scale-110" />
               <span className="absolute inset-x-0 bottom-0 bg-linear-to-t from-ink/90 to-transparent p-3 pt-8 text-xs font-medium">{f.caption}</span>
             </Link>
           ))}

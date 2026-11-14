@@ -1,6 +1,6 @@
 import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import { AnimatePresence } from "motion/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { PublicProduct } from "../../shared/types";
 import { m } from "./motion";
 import { isCutout, ProductImage, ProductVisual } from "./ProductVisual";
@@ -14,13 +14,30 @@ export function ProductGallery({ product, categorySlug }: { product: PublicProdu
   const imgs = product.images;
   if (imgs.length === 0) return <ProductVisual product={product} categorySlug={categorySlug} size="hero" label="Illustration · product photo coming soon" />;
   const cur = imgs[Math.min(i, imgs.length - 1)];
+  const touchX = useRef<number | null>(null);
+  const swiped = useRef(false);
 
   return (
     <div className="grid gap-3">
-      <button type="button" onClick={() => setOpen(true)} className="group relative block w-full cursor-zoom-in text-left" aria-label="Open high-resolution image" data-testid="gallery-main">
+      <button
+        type="button"
+        onClick={() => (swiped.current ? (swiped.current = false) : setOpen(true))}
+        onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
+        onTouchEnd={(e) => {
+          if (touchX.current === null || imgs.length < 2) return;
+          const dx = e.changedTouches[0].clientX - touchX.current;
+          touchX.current = null;
+          if (Math.abs(dx) < 40) return;
+          swiped.current = true; // a swipe is not a tap: don't open the zoom view
+          setI((k) => (k + (dx < 0 ? 1 : -1) + imgs.length) % imgs.length);
+        }}
+        className="group relative block w-full cursor-zoom-in touch-pan-y text-left"
+        aria-label="Open high-resolution image"
+        data-testid="gallery-main"
+      >
         <AnimatePresence mode="wait">
           <m.div key={cur.url} initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.35 }}>
-            <ProductImage url={cur.url} alt={cur.alt ?? product.name} className="aspect-[4/3]" eager />
+            <ProductImage url={cur.url} alt={cur.alt ?? product.name} className="aspect-[4/3]" eager sizes="(max-width: 1024px) 96vw, 640px" />
           </m.div>
         </AnimatePresence>
         <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-ink/70 px-3 py-1.5 text-xs font-medium text-paper opacity-0 backdrop-blur transition group-hover:opacity-100 group-focus-visible:opacity-100">
@@ -28,7 +45,14 @@ export function ProductGallery({ product, categorySlug }: { product: PublicProdu
         </span>
       </button>
       {imgs.length > 1 && (
-        <div className="flex gap-2" role="tablist" aria-label="Product images">
+        <div className="flex justify-center gap-1.5 sm:hidden" aria-hidden="true">
+          {imgs.map((im, k) => (
+            <span key={im.url} className={`h-1.5 rounded-full transition-all ${k === i ? "w-5 bg-verdi-500" : "w-1.5 bg-subtle/40"}`} />
+          ))}
+        </div>
+      )}
+      {imgs.length > 1 && (
+        <div className="flex gap-2 max-sm:hidden" role="tablist" aria-label="Product images">
           {imgs.map((im, k) => (
             <button
               key={im.url}
@@ -39,7 +63,7 @@ export function ProductGallery({ product, categorySlug }: { product: PublicProdu
               onClick={() => setI(k)}
               className={`w-20 overflow-hidden rounded-xl ring-2 transition ${k === i ? "ring-verdi-500" : "ring-transparent opacity-70 hover:opacity-100"}`}
             >
-              <ProductImage url={im.url} alt="" className="aspect-square" />
+              <ProductImage url={im.url} alt="" className="aspect-square" sizes="80px" />
             </button>
           ))}
         </div>

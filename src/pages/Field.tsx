@@ -5,6 +5,7 @@ import { Link } from "react-router";
 import { m, Reveal } from "../components/motion";
 import { Modal } from "../components/ui";
 import { WhatsAppIcon } from "../components/WhatsAppIcon";
+import { fallbackToOriginal, srcSetFor } from "../lib/img";
 import { usePageMeta } from "../lib/seo";
 import { useFieldPhotos, useSite } from "../lib/site";
 
@@ -68,7 +69,7 @@ export default function Field() {
                 transition={{ delay: k * 0.05 }}
                 data-testid="field-photo"
               >
-                <img src={f.src} alt={f.caption} loading="lazy" className={`w-full object-cover transition duration-700 group-hover:scale-105 ${f.tall ? "aspect-[3/4]" : "aspect-[4/3]"}`} />
+                <img src={f.src} srcSet={srcSetFor(f.src)} sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 400px" onError={fallbackToOriginal} decoding="async" alt={f.caption} loading="lazy" className={`w-full object-cover transition duration-700 group-hover:scale-105 ${f.tall ? "aspect-[3/4]" : "aspect-[4/3]"}`} />
                 <span className="absolute inset-x-0 bottom-0 translate-y-1 bg-linear-to-t from-ink/90 to-transparent p-4 pt-12 text-sm font-medium text-paper transition group-hover:translate-y-0">
                   <span className="mb-1 block font-mono text-[10px] tracking-[0.16em] text-sun-300 uppercase">{f.tag}</span>
                   {f.caption}

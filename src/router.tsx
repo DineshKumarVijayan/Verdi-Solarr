@@ -8,6 +8,7 @@ import { AccountProvider } from "./lib/account";
 import { BasketProvider } from "./lib/basket";
 import { CatalogueProvider } from "./lib/catalogue";
 import { CompareProvider } from "./lib/compare";
+import localPages from "../data/local-pages.json";
 import Home from "./pages/Home";
 
 const Products = lazy(() => import("./pages/Products"));
@@ -20,6 +21,7 @@ const Tools = lazy(() => import("./pages/Tools"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Field = lazy(() => import("./pages/Field"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Local = lazy(() => import("./pages/Local"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
 const AdminPrices = lazy(() => import("./pages/admin/Prices"));
@@ -87,6 +89,7 @@ export const router = createBrowserRouter([
           { path: "/solar-tools/:tool", element: <Page><Tools /></Page> },
           { path: "/contact", element: <Page><Contact /></Page> },
           { path: "/in-the-field", element: <Page><Field /></Page> },
+          ...localPages.pages.map((p) => ({ path: `/${p.slug}`, element: <Page><Local page={p} /></Page> })),
           { path: "/account", element: <Page><Account /></Page> },
           { path: "/account/reset", element: <Page><AccountReset /></Page> },
           {

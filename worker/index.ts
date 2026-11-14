@@ -7,6 +7,7 @@ import type { AdminIdentity } from "../shared/types";
 import { dashboard, listPrices, priceHistory, updatePrice } from "./admin";
 import { adminLogin, adminLogout, assertSameOrigin, requireAdmin } from "./auth";
 import { handleCatalogue, revalidate } from "./catalogue";
+import { productPage, robots, sitemap } from "./seo";
 import * as content from "./content";
 import * as customers from "./customers";
 import type { Env } from "./env";
@@ -29,6 +30,14 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   const path = url.pathname.replace(/\/+$/, "") || "/";
   const method = request.method.toUpperCase();
   const ip = request.headers.get("CF-Connecting-IP") ?? "local";
+
+  // ------------------------------------------------- SEO (non-API, see seo.ts)
+  if (!path.startsWith("/api/")) {
+    if (path === "/sitemap.xml") return sitemap(request, env, ctx);
+    if (path === "/robots.txt") return robots(request);
+    if (path.startsWith("/products/")) return productPage(request, env, ctx);
+    return env.ASSETS.fetch(request);
+  }
 
   // ------------------------------------------------------------------ public
   if (path === "/api/health" && method === "GET") {

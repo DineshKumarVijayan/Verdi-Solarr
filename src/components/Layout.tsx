@@ -4,6 +4,7 @@ import { ContactFabs } from "./ContactFabs";
 import { WhatsAppIcon } from "./WhatsAppIcon";
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
+import localPages from "../../data/local-pages.json";
 import { useAccount } from "../lib/account";
 import { useBasket } from "../lib/basket";
 import { useCatalogue } from "../lib/catalogue";
@@ -272,6 +273,13 @@ function Footer() {
           <p>
             © {year} {SITE.name}. Brand names and trademarks belong to their respective owners. Specifications are taken from manufacturer datasheets.
           </p>
+          <nav aria-label="Solar products near you" className="flex flex-wrap gap-x-3 gap-y-1">
+            {localPages.pages.map((p) => (
+              <Link key={p.slug} to={`/${p.slug}`} className="hover:text-paper/80">
+                {p.title}
+              </Link>
+            ))}
+          </nav>
           <Link to="/admin" reloadDocument className="hover:text-paper/80" rel="nofollow">
             Staff sign-in
           </Link>

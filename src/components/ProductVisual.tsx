@@ -1,3 +1,4 @@
+import { fallbackToOriginal, srcSetFor } from "../lib/img";
 import type { PublicProduct } from "../../shared/types";
 
 /**
@@ -26,13 +27,16 @@ export function isCutout(url: string) {
   return /inverter|optimizer\.|mono-perc/.test(url);
 }
 
-export function ProductImage({ url, alt, className = "aspect-[4/3]", eager = false }: { url: string; alt: string; className?: string; eager?: boolean }) {
+export function ProductImage({ url, alt, className = "aspect-[4/3]", eager = false, sizes = "(max-width: 640px) 92vw, 420px" }: { url: string; alt: string; className?: string; eager?: boolean; sizes?: string }) {
   const cutout = isCutout(url);
   return (
     <div className={`relative ${className} overflow-hidden rounded-2xl ${cutout ? "bg-[radial-gradient(120%_90%_at_50%_15%,#ffffff_0%,#eef3ea_55%,#dfe7da_100%)]" : "bg-ink"}`}>
       {cutout && <div className="absolute inset-x-[18%] bottom-[7%] h-[8%] rounded-[50%] bg-ink/25 blur-xl" aria-hidden="true" />}
       <img
         src={url}
+        srcSet={srcSetFor(url)}
+        sizes={sizes}
+        onError={fallbackToOriginal}
         alt={alt}
         loading={eager ? "eager" : "lazy"}
         decoding="async"

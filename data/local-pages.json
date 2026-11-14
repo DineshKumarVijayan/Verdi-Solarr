@@ -1,0 +1,60 @@
+{
+  "pages": [
+    {
+      "slug": "solar-panels-chennai",
+      "title": "Solar panels in Chennai",
+      "metaTitle": "Solar panels in Chennai — TOPCon & bifacial modules with datasheets",
+      "description": "Buy solar panels in Chennai for dealers, installers, EPC projects and businesses. Compare module specifications with the manufacturer datasheet for every model and enquire on WhatsApp.",
+      "eyebrow": "Chennai · Solar modules",
+      "intro": "VERDI SOLARR SOLUTION supplies solar modules from Nemam, Chennai to dealers, installers, EPC contractors and businesses. Every model below shows its key specifications and links to the original manufacturer datasheet, so you can shortlist the right wattage and technology before you ask for a quote.",
+      "categories": ["solar-panels"],
+      "faqs": [
+        ["How do I choose between the panel models listed?", "Compare power (Wp), efficiency, cell technology, dimensions and warranty on each product page, or add up to four models to the comparison table. Every listing links to the manufacturer datasheet."],
+        ["Are the prices shown final?", "Listed prices are indicative. We re-check them when you send an enquiry and confirm the final price, GST, availability and delivery with you on WhatsApp."],
+        ["Can I order panels in project quantities?", "Yes. Add the models and quantities you need to the enquiry basket and send it to us on WhatsApp in one message."],
+        ["Do you deliver outside Chennai?", "Tell us your delivery location in the enquiry and we will confirm the delivery options for your order."]
+      ]
+    },
+    {
+      "slug": "solar-inverters-chennai",
+      "title": "Solar inverters in Chennai",
+      "metaTitle": "Solar inverters in Chennai — on-grid inverters & power optimisers",
+      "description": "Single-phase and three-phase solar inverters and power optimisers in Chennai, with full specifications, manufacturer datasheets and a WhatsApp enquiry basket.",
+      "eyebrow": "Chennai · Inverters & optimisers",
+      "intro": "Find on-grid solar inverters and module-level power optimisers for residential, commercial and project use. Filter by kW rating and phase, check MPPT ranges and DC input limits on the datasheet, and use our free string-sizing tools before you enquire.",
+      "categories": ["solar-inverters", "power-optimisers"],
+      "faqs": [
+        ["How do I size an inverter for my solar panels?", "Use the System Size and Kit Builder tools on this site. They check your panel string voltage and current against the inverter limits listed in the datasheet."],
+        ["Single phase or three phase?", "This usually depends on your electricity connection. Filter the catalogue by phase, and ask us if you are unsure."],
+        ["Are the prices shown final?", "Listed prices are indicative. Final price, GST, availability and delivery are confirmed by our team on WhatsApp."]
+      ]
+    },
+    {
+      "slug": "solar-cables-chennai",
+      "title": "Solar DC cables & solar electricals in Chennai",
+      "metaTitle": "Solar DC cables in Chennai — solar cable coils & electricals",
+      "description": "Solar DC cables and solar electrical components in Chennai with specifications, manufacturer datasheets and per-metre or per-coil pricing.",
+      "eyebrow": "Chennai · Cables & electricals",
+      "intro": "UV-resistant solar DC cables and related solar electricals for rooftop and project installations. Check conductor size, voltage rating and pack size, then add the quantity you need to one enquiry.",
+      "categories": ["solar-dc-cables", "ac-cables", "single-core-cables"],
+      "faqs": [
+        ["Which cable size do I need?", "It depends on current and run length. Our Losses calculator estimates voltage drop for a cable size and length, and the cable lesson in the Learning Hub explains the basics."],
+        ["Is the price per metre or per coil?", "Each listing shows its price unit, for example per metre or per coil."]
+      ]
+    },
+    {
+      "slug": "solar-products-tamil-nadu",
+      "title": "Solar panels, inverters & cables in Tamil Nadu",
+      "metaTitle": "Solar products supplier in Tamil Nadu — panels, inverters, cables",
+      "description": "B2B solar products for Tamil Nadu: solar panels, inverters, power optimisers and solar DC cables with real manufacturer datasheets and WhatsApp enquiries. Based in Chennai.",
+      "eyebrow": "Tamil Nadu · B2B solar supply",
+      "intro": "Dealers, installers and EPC contractors across Tamil Nadu can browse our full solar catalogue online: modules, inverters, optimisers and cables, each with the original datasheet. Build one enquiry with everything your project needs and we will confirm pricing and delivery to your location.",
+      "categories": [],
+      "faqs": [
+        ["Where are you located?", "We are based at Nemam, Chennai. Our address and phone number are on the Contact page."],
+        ["How do I get a quotation?", "Add products and quantities to the enquiry basket and send it on WhatsApp. We confirm final prices, GST, availability and delivery."],
+        ["Can I track my enquiries?", "Yes. Create a free account to see your enquiry history and any reward points credited by our team."]
+      ]
+    }
+  ]
+}

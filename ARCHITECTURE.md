@@ -95,3 +95,11 @@ Separate from admin auth. Mobile number (normalised to 91XXXXXXXXXX) + password.
 - Abuse controls: `AUTH_LIMITER` (20 per minute per IP); 5 failed sign-ins lock the account for 15 minutes; Origin + Sec-Fetch-Site checks on every write.
 - Password reset: there is no email/SMS provider yet, so an admin issues a one-time 48 h link and shares it on WhatsApp. Email or OTP reset can be added later without schema changes.
 - Enquiries: `POST /api/enquiries` re-reads prices from D1 (never trusts the browser), stores a snapshot and returns a reference that is included in the WhatsApp message. Guests are recorded with `CustomerId` NULL.
+
+## SEO, link previews and images
+
+- `run_worker_first` also covers `/products/*`, `/sitemap.xml` and `/robots.txt` (`worker/seo.ts`). Product HTML is rewritten from the live snapshot: title, description, canonical, Open Graph / Twitter tags with the product photo, and schema.org `Product` JSON-LD with an `Offer` **only when a price is listed** (no stock or ratings claimed). This works for products added in the admin after the last build. Cost: one Worker request per product page view.
+- `sitemap.xml` = build routes (`dist/client/routes.json`) + every live product and category, using the request host (no `SITE_URL` needed). `robots.txt` points to it.
+- Location landing pages (`data/local-pages.json` → `/solar-panels-chennai` etc.) are prerendered with FAQPage JSON-LD and list live products. Keep their text factual.
+- Responsive images: static photos have `-480`/`-960` WebP copies (`node scripts/make-image-variants.mjs` after adding photos, needs `sharp`); admin uploads store an `-800.webp` copy. `src/lib/img.ts` builds `srcset` and falls back to the original if a copy is missing.
+- Mobile: sticky "Add to enquiry" bar on product pages (`StickyBuyBar`), swipeable gallery, share button (native share sheet on phones; WhatsApp/Email/Facebook/LinkedIn/Telegram/Instagram/copy link elsewhere).

@@ -507,7 +507,10 @@ async function deleteR2IfUnused(env: Env, storageKey: string): Promise<void> {
   )
     .bind(storageKey)
     .first<{ n: number }>();
-  if ((used?.n ?? 0) === 0) await env.MEDIA.delete(storageKey.slice(3)).catch(() => undefined);
+  if ((used?.n ?? 0) === 0) {
+    const key = storageKey.slice(3);
+    await env.MEDIA.delete([key, key.replace(/\.(webp|jpg|png)$/, "-800.webp")]).catch(() => undefined); // + phone copy
+  }
 }
 
 // ------------------------------------------------------------------ uploads
@@ -544,6 +547,15 @@ export async function upload(env: Env, admin: AdminIdentity, request: Request, u
   const t = sniff(buf);
   if (!t || !(rule.types as readonly string[]).includes(t.type)) {
     throw new HttpError(415, "bad_type", kind === "datasheet" ? "Datasheets must be PDF files." : "Images must be WebP, JPEG or PNG.");
+  }
+  const variantOf = url.searchParams.get("variantOf");
+  if (variantOf) {
+    // 800 px phone copy stored next to an existing upload: r2:image/2026/11/abc.webp -> image/2026/11/abc-800.webp
+    const m = variantOf.match(/^r2:((?:image|field)\/\d{4}\/\d{2}\/[a-z0-9]+)\.(webp|jpg|png)$/);
+    if (!m || !m[1].startsWith(kind + "/") || t.type !== "image/webp") throw new HttpError(400, "bad_variant", "Invalid image copy.");
+    if (!(await env.MEDIA.head(`${m[1]}.${m[2]}`))) throw new HttpError(404, "not_found", "Original image not found.");
+    await env.MEDIA.put(`${m[1]}-800.webp`, buf, { httpMetadata: { contentType: "image/webp", cacheControl: "public, max-age=31536000, immutable" } });
+    return { storageKey: `r2:${m[1]}-800.webp`, url: mediaUrl(`r2:${m[1]}-800.webp`), bytes: buf.byteLength, type: t.type };
   }
   const d = new Date();
   const key = `${kind}/${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${randomToken(12).toLowerCase().replace(/[^a-z0-9]/g, "0")}.${t.ext}`;

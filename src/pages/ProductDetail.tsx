@@ -1,3 +1,5 @@
+import { ShareButton } from "../components/ShareButton";
+import { shareText, StickyBuyBar } from "../components/StickyBuyBar";
 import { Check, ChevronDown, Download, FileText, GitCompareArrows, Minus, Plus } from "lucide-react";
 import { WhatsAppIcon } from "../components/WhatsAppIcon";
 import { useMemo, useState } from "react";
@@ -143,7 +145,8 @@ function Detail({ product, all, brandName, cat }: { product: PublicProduct; all:
             </div>
           )}
 
-          <div className="card mt-6 p-5">
+          <StickyBuyBar product={product} brandName={brandName} />
+          <div className="card mt-6 p-5" id="buy-box">
             <PriceTag price={product.price} size="lg" />
             {product.price.sellingPaise !== null && product.price.updatedAt && (
               <p className="mt-1 text-[11px] text-subtle">Listed price updated {new Date(product.price.updatedAt).toLocaleDateString("en-IN", { dateStyle: "medium" })}. Re-checked when you send your enquiry.</p>
@@ -192,6 +195,7 @@ function Detail({ product, all, brandName, cat }: { product: PublicProduct; all:
               >
                 {compare.has(product.id) ? <Check className="size-3.5" /> : <GitCompareArrows className="size-3.5" />} {compare.has(product.id) ? "In comparison" : "Compare"}
               </button>
+              <ShareButton title={product.name} text={shareText(product, brandName)} path={`/products/${product.slug}`} />
               {compare.ids.length > 1 && (
                 <Link to="/compare" className="btn-ghost btn-sm">
                   View comparison ({compare.ids.length})
