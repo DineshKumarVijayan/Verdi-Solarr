@@ -45,7 +45,7 @@ export default function Home() {
       <CatalogueShowcase />
 
       {/* product families rail */}
-      <section className="border-y border-line/70 bg-paper-2/60 py-20">
+      <section className="border-y border-line/70 bg-paper-2/60 py-12 sm:py-20">
         <Reveal className="container-x">
           <SectionHeading eyebrow="Product families" title="One datasheet, every rating." intro="Each family is listed variant by variant, so every model has its own price and specification." />
         </Reveal>
@@ -77,17 +77,17 @@ export default function Home() {
       <VideoBand />
 
       {/* how enquiries work */}
-      <section className="container-x py-20">
+      <section className="container-x py-12 sm:py-20">
         <Reveal>
           <SectionHeading eyebrow="How enquiries work" title="From shortlist to quotation in three steps." align="center" />
         </Reveal>
-        <Stagger className="mt-12 grid gap-4 md:grid-cols-3">
+        <Stagger className="scrollbar-none -mx-4 mt-8 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mt-12 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0">
           {[
             { icon: Layers, t: "Shortlist", d: "Search by wattage, kW, phase or model. Open the actual manufacturer datasheet without leaving the page." },
             { icon: ClipboardList, t: "Build your enquiry", d: "Add products and quantities. We re-check every listed price against our live database before you send." },
             { icon: WhatsAppIcon, t: "Confirm on WhatsApp", d: "Review a ready-made message and send it to us on WhatsApp. We confirm final pricing, taxes, availability and delivery." },
           ].map((s, i) => (
-            <StaggerItem key={s.t}>
+            <StaggerItem key={s.t} className="w-[82%] shrink-0 snap-start md:w-auto">
               <div className="card relative h-full p-6 transition hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]">
                 <span className="num absolute top-5 right-6 text-5xl text-paper-3">{i + 1}</span>
                 <s.icon className="size-6 text-verdi-600" />
@@ -100,9 +100,9 @@ export default function Home() {
       </section>
 
       {/* tools / learn */}
-      <section className="container-x grid gap-4 pb-20 lg:grid-cols-2">
+      <section className="container-x grid gap-4 pb-12 sm:pb-20 lg:grid-cols-2">
         <Reveal>
-          <Link to="/solar-tools" className="group relative block h-full overflow-hidden rounded-[2rem] bg-ink p-8 text-paper sm:p-10">
+          <Link to="/solar-tools" className="group relative block h-full overflow-hidden rounded-[2rem] bg-ink p-6 text-paper sm:p-10">
             <img src="/images/site/metal-roof-rails.webp" alt="" className="absolute inset-0 size-full object-cover opacity-25 transition duration-700 group-hover:scale-105" />
             <div className="relative">
               <Calculator className="size-7 text-sun-400" />
@@ -115,7 +115,7 @@ export default function Home() {
           </Link>
         </Reveal>
         <Reveal delay={0.1}>
-          <Link to="/learn" className="group relative block h-full overflow-hidden rounded-[2rem] border border-line bg-verdi-50 p-8 sm:p-10">
+          <Link to="/learn" className="group relative block h-full overflow-hidden rounded-[2rem] border border-line bg-verdi-50 p-6 sm:p-10">
             <BookOpen className="size-7 text-verdi-600" />
             <h2 className="mt-5 text-3xl font-semibold">Learn solar, visually.</h2>
             <p className="mt-3 max-w-md text-muted">24 animated lessons: solar cells, TOPCon vs PERC, MPPT, bifacial gain, cable losses, earthing, PM Surya Ghar and more.</p>
@@ -128,13 +128,13 @@ export default function Home() {
 
       {/* trust band */}
       <section className="border-t border-line/70 bg-card">
-        <Stagger className="container-x grid gap-8 py-14 md:grid-cols-3">
+        <Stagger className="container-x scrollbar-none flex snap-x snap-mandatory gap-6 overflow-x-auto py-10 md:grid md:grid-cols-3 md:gap-8 md:overflow-visible md:py-14">
           {[
             { icon: FileText, t: "Real datasheets", d: "Specifications are transcribed from manufacturer PDFs, and you can open the original in one click." },
             { icon: ShieldCheck, t: "Honest pricing", d: "Listed prices come from our live database and are re-checked before every enquiry. Final quotes are confirmed by our team." },
             { icon: WhatsAppIcon, t: "Talk to a person", d: `Speak to ${SITE.contactPerson} on ${SITE.phoneDisplay} or WhatsApp for project quantities and delivery.` },
           ].map((x) => (
-            <StaggerItem key={x.t}>
+            <StaggerItem key={x.t} className="w-[80%] shrink-0 snap-start md:w-auto">
               <div className="flex gap-4">
                 <x.icon className="mt-1 size-5 shrink-0 text-verdi-600" />
                 <div>

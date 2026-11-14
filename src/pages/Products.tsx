@@ -138,8 +138,8 @@ export default function Products() {
           <aside className="hidden lg:block" aria-label="Filters">
             <div className="sticky top-24 -mr-2 max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain pr-2 pb-6 [scrollbar-width:thin]">{filterPanel}</div>
           </aside>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 max-lg:sticky max-lg:top-16 max-lg:z-20 max-lg:-mx-4 max-lg:border-b max-lg:border-line/70 max-lg:bg-paper/95 max-lg:px-4 max-lg:py-2 max-lg:backdrop-blur">
               <div className="relative min-w-0 flex-1 basis-64">
                 <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-subtle" />
                 <label htmlFor="product-q" className="sr-only">

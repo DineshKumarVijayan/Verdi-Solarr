@@ -1,5 +1,4 @@
 import { Phone } from "lucide-react";
-import { useLocation } from "react-router";
 import { useSite } from "../lib/site";
 import { m } from "./motion";
 import { WhatsAppIcon, WHATSAPP_GREEN } from "./WhatsAppIcon";
@@ -7,13 +6,12 @@ import { WhatsAppIcon, WHATSAPP_GREEN } from "./WhatsAppIcon";
 /** Floating WhatsApp + Call buttons (bottom-right), with an attention pulse on WhatsApp. */
 export function ContactFabs() {
   const SITE = useSite();
-  // Product pages have a sticky "Add to enquiry" bar on phones: lift the buttons above it.
-  const onProduct = useLocation().pathname.startsWith("/products/");
+  // Phones/tablets use the bottom tab bar (MobileTabBar) for Call/WhatsApp instead.
   const base = "group relative grid size-13 place-items-center rounded-full text-white shadow-[var(--shadow-lift)] focus-visible:outline-offset-4";
   const label =
     "pointer-events-none absolute right-full mr-3 hidden whitespace-nowrap rounded-full bg-ink px-3 py-1.5 text-xs font-semibold text-paper opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100 sm:block";
   return (
-    <div className={`fixed right-4 z-30 flex flex-col items-end gap-3 sm:right-6 ${onProduct ? "bottom-24 lg:bottom-6" : "bottom-4 sm:bottom-6"}`} data-testid="contact-fabs">
+    <div className={`fixed right-6 bottom-6 z-30 flex-col items-end gap-3 hidden lg:flex`} data-testid="contact-fabs">
       <m.a
         href={SITE.phoneHref}
         className={`${base} bg-sky-500`}

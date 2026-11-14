@@ -45,7 +45,7 @@ export function StickyBuyBar({ product, brandName }: { product: PublicProduct; b
 
   useEffect(() => {
     // Keep the footer reachable above the bar on phones.
-    document.body.style.paddingBottom = show && window.innerWidth < 1024 ? "5rem" : "";
+    document.body.style.paddingBottom = show && window.innerWidth < 1024 ? "4.5rem" : "";
     return () => {
       document.body.style.paddingBottom = "";
     };
@@ -59,7 +59,7 @@ export function StickyBuyBar({ product, brandName }: { product: PublicProduct; b
           animate={{ y: 0 }}
           exit={{ y: 100 }}
           transition={{ type: "spring", stiffness: 400, damping: 36 }}
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(10,24,34,0.12)] backdrop-blur lg:hidden"
+          className="fixed inset-x-0 bottom-[calc(3.6rem+env(safe-area-inset-bottom))] z-40 border-t border-line bg-card/95 shadow-[0_-8px_30px_rgba(10,24,34,0.12)] backdrop-blur lg:hidden"
           data-testid="sticky-buy-bar"
         >
           <div className="container-x flex items-center gap-3 py-2.5">

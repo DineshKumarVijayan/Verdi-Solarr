@@ -1,6 +1,7 @@
 import { ArrowRight, Clock, ClipboardList, GitCompareArrows, Mail, MapPin, Megaphone, Menu, Phone, Search, X } from "lucide-react";
 import { AccountMenu } from "./AccountMenu";
 import { ContactFabs } from "./ContactFabs";
+import { MobileTabBar } from "./MobileTabBar";
 import { WhatsAppIcon } from "./WhatsAppIcon";
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
@@ -50,7 +51,7 @@ export function Layout() {
   useEffect(() => setMenuOpen(false), [loc.pathname]);
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className={`flex min-h-dvh flex-col ${loc.pathname.startsWith("/admin") ? "" : "max-lg:pb-[calc(3.6rem+env(safe-area-inset-bottom))]"}`}>
       <a href="#main" className="sr-only z-[70] rounded-lg bg-ink px-4 py-2 text-paper focus:not-sr-only focus:fixed focus:top-3 focus:left-3">
         Skip to content
       </a>
@@ -133,6 +134,7 @@ export function Layout() {
 
       <Footer />
       <ContactFabs />
+      <MobileTabBar />
       <SearchPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <ScrollRestoration />
     </div>

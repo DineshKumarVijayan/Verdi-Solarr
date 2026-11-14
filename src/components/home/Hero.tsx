@@ -92,11 +92,11 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
       <m.div className="absolute -inset-6 -z-30" style={{ x: bgX, y: bgY }}>
         <m.picture initial={{ scale: 1.22, opacity: 0 }} animate={{ scale: 1.04, opacity: 1 }} transition={{ scale: { duration: 14, ease: [0.16, 1, 0.3, 1] }, opacity: { duration: 1.4 } }} className="block size-full">
           <source media="(max-width: 640px)" srcSet="/media/hero-solar-farm-golden-1200.webp" />
-          <img src="/media/hero-solar-farm-golden-2400.webp" alt="" fetchPriority="high" className="size-full -scale-x-100 object-cover object-[center_60%]" />
+          <img src="/media/hero-solar-farm-golden-2400.webp" alt="" fetchPriority="high" className="size-full -scale-x-100 object-cover object-[46%_center] sm:object-[center_60%]" />
         </m.picture>
       </m.div>
       {/* sun glow + rotating rays at the sun's position */}
-      <div className="pointer-events-none absolute top-[27%] left-[57%] -z-20 hidden size-[900px] -translate-x-1/2 -translate-y-1/2 sm:block" aria-hidden="true">
+      <div className="pointer-events-none absolute top-[24%] left-1/2 -z-20 size-[620px] -translate-x-1/2 -translate-y-1/2 sm:top-[27%] sm:left-[57%] sm:size-[900px]" aria-hidden="true">
         <div className="sun-rays absolute inset-0 rounded-full" />
         <m.div className="absolute inset-[38%] rounded-full bg-[radial-gradient(circle,rgba(255,236,190,0.9),rgba(249,162,27,0.35)_45%,transparent_70%)] mix-blend-screen" animate={{ scale: [1, 1.15, 1], opacity: [0.75, 1, 0.75] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} />
       </div>
@@ -115,17 +115,20 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
         ))}
       </div>
       {/* legibility gradients */}
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(10,24,34,0.92)_0%,rgba(10,24,34,0.72)_38%,rgba(10,24,34,0.15)_68%,rgba(10,24,34,0.1)_100%)]" />
-      <div className="absolute inset-0 -z-10 bg-ink/35 xl:hidden" />
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(10,24,34,0.55)_0%,transparent_22%,transparent_60%,rgba(10,24,34,0.95)_100%)]" />
+      {/* desktop/tablet: dark on the left behind the text */}
+      <div className="absolute inset-0 -z-10 hidden bg-[linear-gradient(90deg,rgba(10,24,34,0.92)_0%,rgba(10,24,34,0.72)_38%,rgba(10,24,34,0.15)_68%,rgba(10,24,34,0.1)_100%)] sm:block" />
+      <div className="absolute inset-0 -z-10 hidden bg-ink/35 sm:block xl:hidden" />
+      <div className="absolute inset-0 -z-10 hidden bg-[linear-gradient(180deg,rgba(10,24,34,0.55)_0%,transparent_22%,transparent_60%,rgba(10,24,34,0.95)_100%)] sm:block" />
+      {/* phones: clear sky and sun on top, text on a dark base below */}
+      <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(10,24,34,0.35)_0%,rgba(10,24,34,0.05)_22%,rgba(10,24,34,0.35)_45%,rgba(10,24,34,0.88)_68%,rgba(10,24,34,0.98)_100%)] sm:hidden" />
 
-      <div className="container-x relative flex flex-1 items-center py-14">
-        <div className="grid w-full items-end gap-10 xl:grid-cols-[1.25fr_1fr]">
+      <div className="container-x relative flex flex-1 items-end pt-40 pb-8 sm:items-center sm:py-14">
+        <div className="grid w-full grid-cols-1 items-end gap-10 xl:grid-cols-[1.25fr_1fr]">
           <div>
             <m.p className="eyebrow !text-sun-300" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
               B2B solar supply · Chennai, Tamil Nadu
             </m.p>
-            <h1 className="mt-4 text-[2.7rem] leading-[1.02] font-semibold drop-shadow-[0_4px_24px_rgba(0,0,0,0.45)] sm:text-6xl lg:text-[4.6rem]">
+            <h1 className="mt-3 text-[2.6rem] leading-[1.02] font-semibold drop-shadow-[0_4px_24px_rgba(0,0,0,0.45)] sm:mt-4 sm:text-6xl lg:text-[4.6rem]">
               {["Power", "your", "next"].map((w, i) => (
                 <m.span
                   key={w}
@@ -154,14 +157,14 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
                 </AnimatePresence>
               </span>
             </h1>
-            <m.p className="mt-6 max-w-xl text-base leading-relaxed text-paper/80 sm:text-lg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1 }}>
-              Solar panels, inverters, cables and every component in between, from {brandText}. Compare real manufacturer datasheets, see live prices and send your whole order in one WhatsApp message.
+            <m.p className="mt-4 max-w-xl text-[15px] leading-relaxed text-paper/80 sm:mt-6 sm:text-lg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1 }}>
+              Solar panels, inverters, cables and every component in between, from {brandText}.<span className="max-sm:hidden"> Compare real manufacturer datasheets, see live prices and send your whole order in one WhatsApp message.</span>
             </m.p>
             <m.form
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.25 }}
-              className="mt-8 flex max-w-xl items-center gap-2 rounded-full border border-white/20 bg-ink/40 p-1.5 pl-5 shadow-2xl backdrop-blur-xl focus-within:border-sun-300"
+              className="mt-6 flex max-w-xl items-center gap-2 rounded-full sm:mt-8 border border-white/20 bg-ink/40 p-1.5 pl-5 shadow-2xl backdrop-blur-xl focus-within:border-sun-300"
               role="search"
               onSubmit={(e) => {
                 e.preventDefault();
@@ -177,14 +180,14 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
                 Search
               </button>
             </m.form>
-            <m.div className="mt-4 flex flex-wrap gap-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.4 }}>
+            <m.div className="scrollbar-none -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.4 }}>
               {quick.map((c) => (
-                <Link key={c.id} to={`/category/${c.slug}`} className="rounded-full border border-white/20 bg-ink/30 px-3 py-1 text-xs text-paper/85 backdrop-blur transition hover:border-sun-300 hover:text-paper">
+                <Link key={c.id} to={`/category/${c.slug}`} className="shrink-0 rounded-full border border-white/20 bg-ink/30 px-3 py-1 text-xs whitespace-nowrap text-paper/85 backdrop-blur transition hover:border-sun-300 hover:text-paper">
                   {c.name}
                 </Link>
               ))}
             </m.div>
-            <m.div className="mt-8 flex flex-wrap gap-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }}>
+            <m.div className="mt-6 flex gap-3 max-sm:hidden sm:mt-8 sm:flex-wrap" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }}>
               <Link to="/products" className="btn-sun">
                 Browse catalogue <ArrowRight className="size-4" />
               </Link>
@@ -235,11 +238,11 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
       </div>
 
       <div className="relative border-t border-white/10 bg-ink/50 backdrop-blur-md">
-        <dl className="container-x grid grid-cols-2 divide-white/10 sm:grid-cols-4 sm:divide-x">
+        <dl className="container-x grid grid-cols-4 divide-x divide-white/10">
           {stats.map((s) => (
-            <div key={s.k} className="px-1 py-5 sm:px-6">
-              <dt className="font-mono text-[10px] tracking-[0.16em] text-paper/55 uppercase">{s.k}</dt>
-              <dd className="num mt-1 text-3xl text-paper">
+            <div key={s.k} className="px-2 py-3 sm:px-6 sm:py-5">
+              <dt className="font-mono text-[8px] leading-tight tracking-[0.1em] text-paper/55 uppercase sm:text-[10px] sm:tracking-[0.16em]">{s.k}</dt>
+              <dd className="num mt-1 text-xl text-paper sm:text-3xl">
                 <CountUp to={s.v} />
               </dd>
             </div>
