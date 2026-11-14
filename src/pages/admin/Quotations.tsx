@@ -111,7 +111,7 @@ function List() {
                   {r.customerCompany ? <span className="text-muted"> · {r.customerCompany}</span> : null}
                 </span>
                 <span className="num font-semibold">{formatPaise(r.totalPaise)}</span>
-                <span className="w-full text-xs text-muted sm:w-auto">
+                <span className="w-full text-xs [overflow-wrap:anywhere] text-muted sm:w-auto">
                   {r.itemCount} item{r.itemCount === 1 ? "" : "s"} · {dt(r.createdAt)} · {r.createdBy}
                 </span>
               </Link>
@@ -785,11 +785,12 @@ function Editor({ id }: { id: number | null }) {
 function ActionButtons({ busy, dirty, hasQuote, compact, onSave, onPreview, onCancel }: { busy: string | null; dirty: boolean; hasQuote: boolean; compact?: boolean; onSave: () => void; onPreview: () => void; onCancel: () => void }) {
   return (
     <>
-      <button type="button" className={`btn-ghost ${compact ? "btn-sm" : ""}`} disabled={!!busy} onClick={onCancel} data-testid="q-cancel">
-        Cancel
+      <button type="button" className={`btn-ghost ${compact ? "btn-sm" : ""}`} disabled={!!busy} onClick={onCancel} data-testid="q-cancel" aria-label="Cancel">
+        {compact && <X className="size-4 min-[400px]:hidden" />}
+        <span className={compact ? "max-[399px]:hidden" : ""}>Cancel</span>
       </button>
       <button type="button" className={`btn-ghost ${compact ? "btn-sm" : ""}`} disabled={!!busy || (hasQuote && !dirty)} onClick={onSave} data-testid="q-save">
-        {busy === "save" ? <Spinner className="size-4" /> : <Save className="size-4" />} {hasQuote ? "Save" : "Save draft"}
+        {busy === "save" ? <Spinner className="size-4" /> : <Save className="size-4" />} <span className={compact ? "max-[399px]:sr-only" : ""}>{hasQuote ? "Save" : "Save draft"}</span>
       </button>
       <button type="button" className={`btn-primary ${compact ? "btn-sm" : ""}`} disabled={!!busy} onClick={onPreview} data-testid="q-preview-btn">
         {busy === "preview" ? <Spinner className="size-4" /> : <Eye className="size-4" />} Preview PDF

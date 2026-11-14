@@ -120,7 +120,7 @@ export function Layout() {
             <AccountMenu dark={isHome} staff={staff} onStaffSignOut={staffSignOut} />
             <Link
               to="/enquiry"
-              className={`relative inline-flex items-center gap-1 rounded-full px-2 py-2 sm:gap-2 sm:px-3.5 text-sm font-semibold ${isHome ? "bg-sun-400 text-ink hover:bg-sun-300" : "bg-ink text-paper hover:bg-ink-3"}`}
+              className={`relative inline-flex items-center gap-1 rounded-full px-1.5 py-2 min-[340px]:px-2 sm:gap-2 sm:px-3.5 text-sm font-semibold ${isHome ? "bg-sun-400 text-ink hover:bg-sun-300" : "bg-ink text-paper hover:bg-ink-3"}`}
               aria-label={`Enquiry basket, ${basket.count} items`}
               data-testid="basket-link"
             >

@@ -90,3 +90,20 @@ test("home catalogue is a swipeable card carousel on phones; dots move between c
   // the desktop rail is not shown on phones
   await expect(page.locator('[role="tablist"][aria-label="Product categories"]')).toBeHidden();
 });
+
+// Very small phones (Galaxy Fold folded ≈ 280 px): header buttons stay on screen, nothing overflows.
+test.describe("280 px phone", () => {
+  test.use({ viewport: { width: 280, height: 640 }, isMobile: false });
+  for (const path of ["/", "/products", "/products/anchor-ino-residential-single-phase-pv-inverter-5ktlx", "/solar-tools", "/in-the-field", "/account", "/admin/products", "/admin/quotations/new"]) {
+    test(`fits at 280 px: ${path}`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState("networkidle");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(280);
+      const menu = page.getByRole("button", { name: "Menu", exact: true });
+      if (await menu.count()) {
+        const box = await menu.boundingBox();
+        expect(box!.x + box!.width).toBeLessThanOrEqual(280);
+      }
+    });
+  }
+});

@@ -129,7 +129,7 @@ export default function Field() {
 
       <div className="container-x flex flex-wrap items-center justify-between gap-4 py-12">
         <p className="text-lg font-semibold">Planning a project? Talk to us about the hardware.</p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link to="/products" className="btn-ghost">
             Browse products
           </Link>

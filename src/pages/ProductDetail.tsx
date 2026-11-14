@@ -248,10 +248,10 @@ function Detail({ product, all, brandName, cat }: { product: PublicProduct; all:
                   <tbody>
                     {rows.map((s) => (
                       <tr key={s.k} className="border-t border-line/70">
-                        <th scope="row" className="w-1/2 px-5 py-2.5 text-left font-normal text-muted">
+                        <th scope="row" className="w-1/2 px-3 py-2.5 text-left font-normal [overflow-wrap:anywhere] text-muted min-[360px]:px-5">
                           {s.l}
                         </th>
-                        <td className="num px-5 py-2.5 text-ink">
+                        <td className="num px-3 py-2.5 [overflow-wrap:anywhere] text-ink min-[360px]:px-5">
                           {s.v}
                           {s.u ? <span className="text-subtle"> {s.u}</span> : null}
                         </td>

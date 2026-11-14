@@ -50,8 +50,8 @@ export function ConsumptionTool() {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
-      <div className="card relative overflow-x-auto p-4">
-        <table className="w-full min-w-[560px] text-sm">
+      <div className="card relative p-4 md:overflow-x-auto">
+        <table className="rtable rtable-form w-full text-sm md:min-w-[560px]">
           <thead className="text-left text-xs text-muted">
             <tr>
               <th className="pb-2 font-semibold">Appliance</th>
@@ -65,16 +65,16 @@ export function ConsumptionTool() {
           <tbody>
             {rows.map((r, i) => (
               <tr key={i} className="border-t border-line/70">
-                <td className="py-1.5 pr-2">
+                <td className="py-1.5 pr-2" data-label="Appliance">
                   <input aria-label="Appliance name" className="field !py-1.5" value={r.name} onChange={(e) => upd(i, { name: e.target.value })} />
                 </td>
                 {(["watts", "quantity", "hoursPerDay"] as const).map((k) => (
-                  <td key={k} className="py-1.5 pr-2">
+                  <td key={k} className="py-1.5 pr-2" data-label={k === "watts" ? "Watts" : k === "quantity" ? "Qty" : "Hours/day"}>
                     <input aria-label={`${r.name} ${k}`} type="number" min={0} max={k === "hoursPerDay" ? 24 : undefined} step={k === "hoursPerDay" ? 0.5 : 1} className="field num !w-24 !py-1.5" value={r[k]} onChange={(e) => upd(i, { [k]: Math.max(0, e.target.valueAsNumber || 0) })} />
                   </td>
                 ))}
-                <td className="num py-1.5">{s.perRow[i].dailyKwh.toFixed(2)}</td>
-                <td className="py-1.5 text-right">
+                <td className="num py-1.5" data-label="kWh/day">{s.perRow[i].dailyKwh.toFixed(2)}</td>
+                <td className="rt-actions py-1.5 text-right">
                   <button type="button" className="rounded-full p-1.5 text-subtle hover:text-danger" onClick={() => save(rows.filter((_, j) => j !== i))} aria-label={`Remove ${r.name}`}>
                     <Trash2 className="size-4" />
                   </button>
@@ -123,7 +123,7 @@ export function ConsumptionTool() {
               ))}
           </ul>
         </div>
-        <Link to={`/solar-tools/sizing?kwh=${Math.round(s.monthlyKwh)}&tariff=${tariff}`} className="btn-dark">
+        <Link to={`/solar-tools/sizing?kwh=${Math.round(s.monthlyKwh)}&tariff=${tariff}`} className="btn-dark max-w-full text-center whitespace-normal">
           Size a solar system for {kwh(s.monthlyKwh)}/month →
         </Link>
       </div>
