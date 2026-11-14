@@ -19,9 +19,14 @@ const LOCK_MINUTES = 15;
 
 export const adminCookieName = (url: URL) => (url.protocol === "https:" ? "__Host-vs_admin" : "vs_admin");
 
-function adminCookie(url: URL, token: string | null): string {
+function adminCookies(url: URL, token: string | null): string[] {
   const secure = url.protocol === "https:" ? "; Secure" : "";
-  return `${adminCookieName(url)}=${token ?? ""}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${token ? SESSION_HOURS * 3600 : 0}${secure}`;
+  const maxAge = token ? SESSION_HOURS * 3600 : 0;
+  return [
+    `${adminCookieName(url)}=${token ?? ""}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secure}`,
+    // Non-secret hint so the public pages can show "Admin dashboard" instead of "Staff sign-in".
+    `vs_staff=${token ? "1" : ""}; Path=/; SameSite=Lax; Max-Age=${maxAge}${secure}`,
+  ];
 }
 
 export async function requireAdmin(request: Request, env: Env): Promise<AdminIdentity> {
@@ -74,7 +79,7 @@ export async function adminLogin(request: Request, env: Env, body: unknown): Pro
     env.DB.prepare("INSERT INTO AuditLogs (AdminIdentity, Action, EntityType, EntityId, CreatedAt) VALUES (?1, 'admin.login', 'AdminUser', ?2, ?3)").bind(row.Email.toLowerCase(), String(row.AdminId), now.toISOString()),
   ]);
   const res = json({ admin: { email: row.Email.toLowerCase(), displayName: row.DisplayName, role: row.Role } satisfies AdminIdentity });
-  res.headers.append("Set-Cookie", adminCookie(new URL(request.url), token));
+  for (const c of adminCookies(new URL(request.url), token)) res.headers.append("Set-Cookie", c);
   return res;
 }
 
@@ -83,7 +88,7 @@ export async function adminLogout(request: Request, env: Env): Promise<Response>
   const token = readCookie(request, adminCookieName(url));
   if (token) await env.DB.prepare("DELETE FROM AdminSessions WHERE SessionHash = ?1").bind(await sha256Hex(token)).run();
   const res = json({ ok: true });
-  res.headers.append("Set-Cookie", adminCookie(url, null));
+  for (const c of adminCookies(url, null)) res.headers.append("Set-Cookie", c);
   return res;
 }
 

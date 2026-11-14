@@ -29,7 +29,10 @@ export default function AdminLayout() {
   const check = useCallback(() => {
     api<{ admin: AdminIdentity }>("/api/admin/me")
       .then((r) => setState({ admin: r.admin }))
-      .catch((e: ApiError) => setState({ error: e }));
+      .catch((e: ApiError) => {
+        if (e.status === 401) document.cookie = "vs_staff=; Path=/; Max-Age=0"; // session expired: drop the "signed in" hint
+        setState({ error: e });
+      });
   }, []);
   useEffect(check, [check]);
 

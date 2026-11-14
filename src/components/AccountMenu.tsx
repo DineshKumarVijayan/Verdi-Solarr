@@ -1,8 +1,8 @@
-import { Award, ClipboardList, LayoutDashboard, LogIn, LogOut, UserPlus, UserRound } from "lucide-react";
+import { Award, ClipboardList, LayoutDashboard, LogIn, LogOut, ShieldCheck, UserPlus, UserRound } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { useAccount } from "../lib/account";
+import { staffSignedIn, useAccount } from "../lib/account";
 import { m } from "./motion";
 
 /**
@@ -13,6 +13,7 @@ export function AccountMenu({ dark }: { dark: boolean }) {
   const [open, setOpen] = useState(false);
   const { customer, logout } = useAccount();
   const ref = useRef<HTMLDivElement>(null);
+  const staff = staffSignedIn();
 
   useEffect(() => {
     if (!open) return;
@@ -36,13 +37,17 @@ export function AccountMenu({ dark }: { dark: boolean }) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={customer ? `Account menu for ${customer.name}` : "Account menu"}
-        title={customer ? customer.name : "Sign in"}
+        title={customer ? customer.name : staff ? "Signed in as staff" : "Sign in"}
         data-testid="account-menu"
         className={`rounded-full p-2.5 transition ${dark ? "hover:bg-white/10" : "hover:bg-paper-2"}`}
       >
         {customer ? (
           <span className="grid size-5 place-items-center rounded-full bg-verdi-500 text-[11px] font-bold text-white" data-testid="signed-in-badge">
             {customer.name.trim()[0]?.toUpperCase()}
+          </span>
+        ) : staff ? (
+          <span className="grid size-5 place-items-center rounded-full bg-ink text-paper ring-1 ring-white/30" data-testid="staff-badge">
+            <ShieldCheck className="size-3.5" />
           </span>
         ) : (
           <UserRound className="size-5" />
@@ -93,9 +98,9 @@ export function AccountMenu({ dark }: { dark: boolean }) {
               </>
             )}
             <div className="my-1.5 border-t border-line" />
-            <p className="px-3 pt-1 pb-1.5 font-mono text-[10px] tracking-[0.16em] text-subtle uppercase">VERDI staff</p>
+            <p className="px-3 pt-1 pb-1.5 font-mono text-[10px] tracking-[0.16em] text-subtle uppercase">VERDI staff{staff ? " · signed in" : ""}</p>
             <a role="menuitem" href="/admin" className={item} data-testid="admin-signin-link">
-              <LayoutDashboard className="size-4 text-subtle" /> Staff / admin sign-in
+              <LayoutDashboard className={`size-4 ${staff ? "text-verdi-600" : "text-subtle"}`} /> {staff ? "Admin dashboard" : "Staff / admin sign-in"}
             </a>
           </m.div>
         )}

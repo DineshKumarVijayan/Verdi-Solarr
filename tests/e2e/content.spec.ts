@@ -203,8 +203,18 @@ test("customer registers, sends an enquiry, sees history, status and reward poin
   await page.locator("#f-location").fill("Chennai");
   await page.getByTestId("check-prices").click();
   const preview = page.getByTestId("message-preview");
-  await expect(preview).toContainText(/Reference: VS-\d{6}-[A-Z0-9]{5}/);
-  const ref = (await preview.textContent())!.match(/VS-\d{6}-[A-Z0-9]{5}/)![0];
+  await expect(preview).toBeVisible();
+  // Previewing is not an enquiry: nothing is saved until the customer actually sends it.
+  const count = async () => (await (await request.get("/api/admin/enquiries?q=E2E%20Buyer")).json()).rows.length;
+  const before = await count();
+  await page.waitForTimeout(500);
+  expect(await count()).toBe(before);
+  await page.context().route("https://wa.me/**", (r) => r.fulfill({ body: "ok" }));
+  const [popup] = await Promise.all([page.context().waitForEvent("page"), page.getByTestId("open-whatsapp").click()]);
+  await popup.waitForURL(/wa\.me/);
+  const ref = decodeURIComponent(popup.url()).match(/Reference: (VS-\d{6}-[A-Z0-9]{5})/)![1];
+  await popup.close();
+  expect(await count()).toBe(before + 1);
   await page.keyboard.press("Escape");
 
   await page.goto("/account");

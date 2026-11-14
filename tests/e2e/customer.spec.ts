@@ -92,7 +92,11 @@ test("enquiry: add, revalidate prices, preview and generate a WhatsApp link", as
   await expect(preview).toContainText("Test Installer");
   await expect(preview).toContainText("620 Wp");
   await expect(preview).toContainText("subject to confirmation by VERDI SOLARR SOLUTION");
-  const href = await page.getByTestId("open-whatsapp").getAttribute("href");
+  await page.context().route("https://wa.me/**", (r) => r.fulfill({ body: "ok" }));
+  const [popup] = await Promise.all([page.context().waitForEvent("page"), page.getByTestId("open-whatsapp").click()]);
+  await popup.waitForURL(/wa.me/);
+  const href = popup.url();
+  await popup.close();
   expect(href).toMatch(/^https:\/\/wa\.me\/918939277997\?text=/);
   expect(decodeURIComponent(href!.split("text=")[1])).toContain("Sunrise EPC");
   // basket survives reload

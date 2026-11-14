@@ -19,6 +19,9 @@ const Ctx = createContext<AccountState | null>(null);
 const post = (path: string, body?: unknown) => api<{ customer: CustomerProfile }>(path, { method: "POST", body: JSON.stringify(body ?? {}) });
 
 /** The session cookie is HttpOnly; a non-secret hint cookie tells us whether asking the server is worthwhile. */
+/** True while an admin (staff) session may exist in this browser (hint cookie set at admin sign-in). */
+export const staffSignedIn = () => typeof document !== "undefined" && /(?:^|;\s*)vs_staff=1/.test(document.cookie);
+
 const mightBeSignedIn = () => typeof document !== "undefined" && /(?:^|;\s*)vs_signed_in=1/.test(document.cookie);
 
 export function AccountProvider({ children }: { children: ReactNode }) {

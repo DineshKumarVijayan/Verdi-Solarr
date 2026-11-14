@@ -6,7 +6,7 @@ import { WhatsAppIcon } from "./WhatsAppIcon";
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
 import localPages from "../../data/local-pages.json";
-import { useAccount } from "../lib/account";
+import { staffSignedIn, useAccount } from "../lib/account";
 import { useBasket } from "../lib/basket";
 import { useCatalogue } from "../lib/catalogue";
 import { useCompare } from "../lib/compare";
@@ -116,7 +116,7 @@ export function Layout() {
         {menuOpen && (
           <nav id="mobile-nav" aria-label="Mobile" className={`border-t lg:hidden ${isHome ? "border-white/10" : "border-line"}`}>
             <ul className="container-x grid gap-1 py-3">
-              {[{ to: "/", label: "Home" }, ...NAV, { to: "/compare", label: "Compare" }, customer ? { to: "/account", label: "My enquiries & reward points" } : { to: "/account", label: "Sign in / Create account" }, { to: "/admin", label: "Staff sign-in" }].map((n) => (
+              {[{ to: "/", label: "Home" }, ...NAV, { to: "/compare", label: "Compare" }, customer ? { to: "/account", label: "My enquiries & reward points" } : { to: "/account", label: "Sign in / Create account" }, { to: "/admin", label: staffSignedIn() ? "Admin dashboard" : "Staff sign-in" }].map((n) => (
                 <li key={n.to}>
                   <NavLink to={n.to} end reloadDocument={n.to === "/admin"} className={({ isActive }) => `block rounded-xl px-3 py-3 text-base font-medium ${isActive ? "bg-verdi-600 text-white" : ""}`}>
                     {n.label}

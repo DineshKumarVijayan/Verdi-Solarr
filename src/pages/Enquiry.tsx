@@ -30,7 +30,8 @@ export default function Enquiry() {
   const [checking, setChecking] = useState(false);
   const [checkError, setCheckError] = useState<string | null>(null);
   const [verified, setVerified] = useState<{ items: Map<number, RevalidatedItem>; checkedAt: string } | null>(null);
-  const [preview, setPreview] = useState<{ message: string; verified: boolean } | null>(null);
+  const [preview, setPreview] = useState<{ customer: EnquiryCustomer; lines: Parameters<typeof buildEnquiryMessage>[1]; message: string; verified: boolean } | null>(null);
+  const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState(false);
   const { customer: account } = useAccount();
   const SITE = useSite();
@@ -144,8 +145,8 @@ export default function Enquiry() {
         toast(`${changed.length + gone.length} item(s) changed since you added them. Please review.`, "error");
         return;
       }
-      const ref = await record(c, true);
-      setPreview({ message: buildEnquiryMessage(c, buildLines(map), new Date(), ref), verified: true });
+      const lines = buildLines(map);
+      setPreview({ customer: c, lines, message: buildEnquiryMessage(c, lines, new Date()), verified: true });
     } catch (e) {
       setCheckError(e instanceof ApiError ? e.message : "Could not verify prices.");
     } finally {
@@ -163,21 +164,47 @@ export default function Enquiry() {
       acknowledged.set(id, { ...v, changed: false });
     }
     setVerified({ items: acknowledged, checkedAt: verified.checkedAt });
-    const ref = await record(c, true);
-    setPreview({ message: buildEnquiryMessage(c, buildLines(acknowledged), new Date(), ref), verified: true });
+    const lines = buildLines(acknowledged);
+    setPreview({ customer: c, lines, message: buildEnquiryMessage(c, lines, new Date()), verified: true });
   };
 
   const previewWithoutPrices = async () => {
     const c = validate();
     if (!c) return;
-    const ref = await record(c, false);
-    setPreview({ message: buildEnquiryMessage(c, buildLines(null), new Date(), ref), verified: false });
+    const lines = buildLines(null);
+    setPreview({ customer: c, lines, message: buildEnquiryMessage(c, lines, new Date()), verified: false });
+  };
+
+  /** The enquiry is saved only when the customer actually sends it (Open WhatsApp / Copy message). */
+  const finalMessage = async (): Promise<string> => {
+    if (!preview) return "";
+    const ref = await record(preview.customer, preview.verified);
+    return ref ? buildEnquiryMessage(preview.customer, preview.lines, new Date(), ref) : preview.message;
+  };
+
+  const openWhatsApp = async () => {
+    if (!preview || sending) return;
+    setSending(true);
+    const w = window.open("about:blank", "_blank"); // opened inside the click so it is not blocked
+    try {
+      const url = whatsappUrl(await finalMessage(), SITE.whatsappNumber);
+      if (w) w.location.href = url;
+      else location.href = url;
+    } finally {
+      setSending(false);
+    }
   };
 
   const copy = async () => {
     if (!preview) return;
     try {
-      await navigator.clipboard.writeText(preview.message);
+      const text = finalMessage();
+      if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
+        // Safari needs the clipboard write to start inside the click; the text arrives when saved.
+        await navigator.clipboard.write([new ClipboardItem({ "text/plain": text.then((t) => new Blob([t], { type: "text/plain" })) })]);
+      } else {
+        await navigator.clipboard.writeText(await text);
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -394,7 +421,7 @@ export default function Enquiry() {
         open={!!preview}
         onClose={() => setPreview(null)}
         title="Preview your WhatsApp message"
-        description="WhatsApp opens with this text filled in. You still need to press Send."
+        description="WhatsApp opens with this text filled in, plus a reference number. You still need to press Send."
         size="lg"
         fullscreenOnMobile
         footer={
@@ -403,9 +430,9 @@ export default function Enquiry() {
               <button type="button" className="btn-ghost" onClick={copy} data-testid="copy-message">
                 {copied ? <Check className="size-4" /> : <ClipboardCopy className="size-4" />} {copied ? "Copied" : "Copy message"}
               </button>
-              <a href={whatsappUrl(preview.message, SITE.whatsappNumber)} target="_blank" rel="noopener" className="btn-primary" data-testid="open-whatsapp">
+              <button type="button" onClick={openWhatsApp} disabled={sending} className="btn-primary" data-testid="open-whatsapp">
                 <WhatsAppIcon className="size-4" /> Open WhatsApp
-              </a>
+              </button>
             </div>
           )
         }
