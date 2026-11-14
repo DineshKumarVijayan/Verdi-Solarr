@@ -41,7 +41,7 @@ export function AccountMenu({ dark, staff, onStaffSignOut }: { dark: boolean; st
         aria-label={customer ? `Account menu for ${customer.name}` : "Account menu"}
         title={customer ? customer.name : staff ? `Signed in as ${staffName} (staff)` : "Sign in"}
         data-testid="account-menu"
-        className={`flex items-center gap-2 rounded-full transition ${customer || staff ? `py-1.5 pr-3 pl-1.5 ${dark ? "bg-white/10 hover:bg-white/15" : "bg-paper-2 hover:bg-line/60"}` : `p-2.5 ${dark ? "hover:bg-white/10" : "hover:bg-paper-2"}`}`}
+        className={`flex items-center gap-2 rounded-full transition ${customer || staff ? `py-1.5 pr-2 pl-1.5 sm:pr-3 ${dark ? "bg-white/10 hover:bg-white/15" : "bg-paper-2 hover:bg-line/60"}` : `p-2.5 ${dark ? "hover:bg-white/10" : "hover:bg-paper-2"}`}`}
       >
         {customer ? (
           <span className="grid size-6 place-items-center rounded-full bg-verdi-500 text-[11px] font-bold text-white" data-testid="signed-in-badge">
@@ -55,7 +55,7 @@ export function AccountMenu({ dark, staff, onStaffSignOut }: { dark: boolean; st
           <UserRound className="size-5" />
         )}
         {(customer || staff) && (
-          <span className="max-w-[5.5rem] truncate text-sm font-medium" data-testid="signed-in-name">
+          <span className="max-w-[3.75rem] sm:max-w-[5.5rem] truncate text-sm font-medium" data-testid="signed-in-name">
             {shown}
           </span>
         )}

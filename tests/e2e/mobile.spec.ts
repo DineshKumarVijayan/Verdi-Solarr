@@ -35,3 +35,15 @@ test("product page: sticky add-to-enquiry bar appears after scrolling and adds t
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+// Small phones (360 px) with someone signed in: the header (name pill, basket, menu) must still fit.
+test.describe("360 px phone, signed in", () => {
+  test.use({ viewport: { width: 360, height: 760 } });
+  for (const path of ["/", "/products", "/admin/products/new", "/admin/quotations/new"]) {
+    test(`no horizontal overflow at 360 px: ${path}`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState("networkidle");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    });
+  }
+});

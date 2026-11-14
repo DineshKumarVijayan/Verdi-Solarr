@@ -1,13 +1,13 @@
 /** VERDI brand mark (supplied logo emblem) + wordmark. `dark` = on dark backgrounds. */
 export function Logo({ dark = false, compact = false }: { dark?: boolean; compact?: boolean }) {
   return (
-    <span className="group inline-flex items-center gap-2.5" aria-label="VERDI Solarr Solution">
+    <span className="group inline-flex items-center gap-2 sm:gap-2.5" aria-label="VERDI Solarr Solution">
       <img
         src="/brand/verdi-mark.png"
         alt=""
         width={40}
         height={41}
-        className="size-10 shrink-0 transition-transform duration-700 ease-out group-hover:rotate-[30deg]"
+        className="size-9 shrink-0 sm:size-10 transition-transform duration-700 ease-out group-hover:rotate-[30deg]"
         decoding="async"
       />
       {!compact && (

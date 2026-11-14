@@ -79,7 +79,7 @@ export function Layout() {
       </a>
       <Announcement />
       <header className={`sticky top-0 z-40 border-b backdrop-blur-xl ${isHome ? "border-white/10 bg-ink/85 text-paper" : "border-line/70 bg-paper/85"}`}>
-        <div className="container-x flex h-16 items-center gap-4">
+        <div className="container-x flex h-16 items-center gap-2 sm:gap-4">
           <Link to="/" aria-label="VERDI SOLARR SOLUTION — home" className="shrink-0">
             <Logo dark={isHome} />
           </Link>
@@ -98,7 +98,7 @@ export function Layout() {
               </NavLink>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-0.5 sm:gap-1.5">
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
@@ -108,7 +108,7 @@ export function Layout() {
               <Search className="size-4" /> Search products
               <kbd className="ml-4 rounded border border-current/20 px-1.5 font-mono text-[10px] opacity-70">Ctrl K</kbd>
             </button>
-            <button type="button" onClick={() => setPaletteOpen(true)} className={`rounded-full p-2.5 xl:hidden ${isHome ? "hover:bg-white/10" : "hover:bg-paper-2"}`} aria-label="Search products">
+            <button type="button" onClick={() => setPaletteOpen(true)} className={`rounded-full p-2 sm:p-2.5 xl:hidden ${isHome ? "hover:bg-white/10" : "hover:bg-paper-2"}`} aria-label="Search products">
               <Search className="size-5" />
             </button>
             {compare.ids.length > 0 && (
@@ -120,7 +120,7 @@ export function Layout() {
             <AccountMenu dark={isHome} staff={staff} onStaffSignOut={staffSignOut} />
             <Link
               to="/enquiry"
-              className={`relative inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold ${isHome ? "bg-sun-400 text-ink hover:bg-sun-300" : "bg-ink text-paper hover:bg-ink-3"}`}
+              className={`relative inline-flex items-center gap-1 rounded-full px-2 py-2 sm:gap-2 sm:px-3.5 text-sm font-semibold ${isHome ? "bg-sun-400 text-ink hover:bg-sun-300" : "bg-ink text-paper hover:bg-ink-3"}`}
               aria-label={`Enquiry basket, ${basket.count} items`}
               data-testid="basket-link"
             >
@@ -130,7 +130,7 @@ export function Layout() {
                 {basket.count}
               </span>
             </Link>
-            <button type="button" className={`rounded-full p-2.5 lg:hidden ${isHome ? "hover:bg-white/10" : "hover:bg-paper-2"}`} onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-controls="mobile-nav" aria-label="Menu">
+            <button type="button" className={`rounded-full p-2 sm:p-2.5 lg:hidden ${isHome ? "hover:bg-white/10" : "hover:bg-paper-2"}`} onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-controls="mobile-nav" aria-label="Menu">
               {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
             </button>
           </div>

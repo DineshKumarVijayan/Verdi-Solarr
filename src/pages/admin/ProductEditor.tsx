@@ -67,6 +67,7 @@ export default function ProductEditor() {
   const [detail, setDetail] = useState<AdminProductDetail | null>(null);
   const [f, setF] = useState<Form>(empty);
   const [touchedSlug, setTouchedSlug] = useState(!isNew);
+  const [slugEditing, setSlugEditing] = useState(false);
   const [price, setPrice] = useState({ selling: "", mrp: "", gstRate: "18", gstIncluded: false, unit: "per piece" });
   const [busy, setBusy] = useState(false);
   const [errs, setErrs] = useState<Record<string, string>>({});
@@ -297,14 +298,33 @@ export default function ProductEditor() {
               {input("sku", "SKU (your product code)", { req: true, ph: "e.g. VS-ANC-TOPCON-600", hint: "Unique. Letters, numbers, - _ . /" })}
               {input("model", "Manufacturer model number", { ph: "e.g. PE-132-600THGB-G12R" })}
             </div>
-            {input("slug", "Web address", {
-              req: true,
-              hint: `verdisolarr…/products/${f.slug || "…"}`,
-              onChange: (v) => {
-                setTouchedSlug(true);
-                set("slug", v.toLowerCase().replace(/[^a-z0-9-]/g, "-"));
-              },
-            })}
+            {/* Page link: created automatically from the name. Editing is optional and tucked away. */}
+            <div className="rounded-xl bg-paper-2/60 px-3 py-2.5 text-sm" data-testid="page-link">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="text-muted">Page link:</span>
+                <span className="min-w-0 font-mono text-xs break-all">
+                  {location.host}/products/<b>{f.slug || "…"}</b>
+                </span>
+                {editable && !slugEditing && (
+                  <button type="button" className="text-xs font-semibold text-verdi-700 underline" onClick={() => setSlugEditing(true)}>
+                    Edit
+                  </button>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-subtle">
+                {isNew ? "Created automatically from the product name. Nothing to do here." : "Changing it breaks links customers may have already shared, so leave it unless needed."}
+              </p>
+              {slugEditing &&
+                input("slug", "Page link (lowercase letters, numbers and dashes)", {
+                  req: true,
+                  className: "mt-2",
+                  onChange: (v) => {
+                    setTouchedSlug(true);
+                    set("slug", v.toLowerCase().replace(/[^a-z0-9-]/g, "-"));
+                  },
+                })}
+              {errs.slug && !slugEditing && <p className="mt-1 text-xs text-danger">{errs.slug}</p>}
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               {input("seriesName", "Product family / series", { hint: "Products in the same series are grouped as variants.", ph: "e.g. TOPCon Bifacial 600–630 Wp" })}
               {input("variant", "Variant label", { ph: "e.g. 600 Wp" })}

@@ -333,8 +333,18 @@ function specInserts(env: Env, productRef: { sql: string; bind: unknown }, specs
 
 export async function createProduct(env: Env, admin: AdminIdentity, body: unknown) {
   requireRole(admin, CONTENT_ROLES, "add products");
-  const v = parse(ProductInputSchema, body);
-  await assertRefs(env, v.brandId, v.categoryId);
+  const input = parse(ProductInputSchema, body);
+  await assertRefs(env, input.brandId, input.categoryId);
+  if (await env.DB.prepare("SELECT 1 FROM Products WHERE SKU = ?1").bind(input.sku).first()) {
+    throw new HttpError(409, "duplicate", "Another product already uses this product code (SKU).", [{ path: "sku", message: "Already used by another product" }]);
+  }
+  // Page link: made from the name; if taken, add -2, -3 … automatically (admins never need to fix it).
+  const taken = new Set(
+    (await env.DB.prepare("SELECT ProductSlug FROM Products WHERE ProductSlug = ?1 OR ProductSlug LIKE ?2").bind(input.slug, `${input.slug}-%`).all<{ ProductSlug: string }>()).results.map((r) => r.ProductSlug),
+  );
+  let slug = input.slug;
+  for (let n = 2; taken.has(slug); n++) slug = `${input.slug}-${n}`;
+  const v = { ...input, slug };
   const now = nowIso();
   const price = v.price ?? null;
   const ref = { sql: "SKU = ?1", bind: v.sku };
