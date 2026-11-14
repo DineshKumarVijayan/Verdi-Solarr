@@ -71,11 +71,14 @@ export default function ProductEditor() {
   const [f, setF] = useState<Form>(empty);
   const [touchedSlug, setTouchedSlug] = useState(!isNew);
   const [slugEditing, setSlugEditing] = useState(false);
+  // New product: images / datasheet uploaded now, attached right after "Create product".
+  const [pending, setPending] = useState<PendingFile[]>([]);
+  const [uploading, setUploading] = useState(0);
   const [price, setPrice] = useState({ selling: "", mrp: "", gstRate: "18", gstIncluded: false, unit: "per piece" });
   const [busy, setBusy] = useState(false);
   // Unsaved-changes tracking: snapshot of the form as last loaded/saved.
   const baseline = useRef<string | null>(null);
-  const snapshot = JSON.stringify([f, price]);
+  const snapshot = JSON.stringify([f, price, pending.map((x) => x.storageKey)]);
   if (baseline.current === null && (isNew || detail)) baseline.current = snapshot;
   const dirty = editable && baseline.current !== null && snapshot !== baseline.current;
   useUnsavedWarning(dirty);
@@ -178,11 +181,35 @@ export default function ProductEditor() {
     } else payload.expectedUpdatedAt = detail!.updatedAt;
     try {
       const r = isNew ? await send<{ product: AdminProductDetail }>("/api/admin/products", "POST", payload) : await send<{ product: AdminProductDetail }>(`/api/admin/products/${id}`, "PUT", payload);
-      setDetail(r.product);
-      setF(fromDetail(r.product));
+      let product = r.product;
+      let failed = 0;
+      if (isNew && pending.length) {
+        // first image = cover; datasheet becomes the product's datasheet
+        let firstImage = true;
+        for (const m of pending) {
+          try {
+            product = (
+              await send<{ product: AdminProductDetail }>(`/api/admin/products/${product.id}/media`, "POST", {
+                type: m.type,
+                storageKey: m.storageKey,
+                alt: m.type === "image" ? product.name : null,
+                title: m.type === "datasheet" ? `${product.name} datasheet` : null,
+                isPrimary: m.type === "datasheet" || firstImage,
+              })
+            ).product;
+            if (m.type === "image") firstImage = false;
+          } catch {
+            failed++;
+          }
+        }
+        setPending([]);
+      }
+      setDetail(product);
+      setF(fromDetail(product));
       markSaved();
       reload();
-      toast(isNew ? "Product created and published." : "Saved. Live on the website.", "success");
+      if (failed) toast(`Product created, but ${failed} file(s) could not be attached. Please add them again under Images & datasheet.`, "error");
+      else toast(isNew ? "Product created and published." : "Saved. Live on the website.", "success");
       if (isNew) {
         created.current = r.product.id;
         nav(`/admin/products/${r.product.id}`, { replace: true });
@@ -262,7 +289,7 @@ export default function ProductEditor() {
             </button>
           )}
           {editable && (
-            <button type="button" className="btn-primary btn-sm" onClick={save} disabled={busy} data-testid="save-product">
+            <button type="button" className="btn-primary btn-sm" onClick={save} disabled={busy || uploading > 0} data-testid="save-product">
               {busy ? <Spinner className="size-4" /> : <Save className="size-4" />} {isNew ? "Create product" : "Save changes"}
             </button>
           )}
@@ -570,7 +597,7 @@ export default function ProductEditor() {
           </section>
 
           {/* ------------------------------------------------ media */}
-          {detail ? <MediaManager product={detail} editable={editable} onChange={(p) => (setDetail(p), reload())} /> : <section className="card p-5 text-sm text-muted">Images and the datasheet PDF can be added once the product is created.</section>}
+          {detail ? <MediaManager product={detail} editable={editable} onChange={(p) => (setDetail(p), reload())} /> : <NewProductMedia pending={pending} setPending={setPending} uploading={uploading} setUploading={setUploading} editable={editable} />}
 
           {detail && editable && (
             <section className="rounded-3xl border border-danger/30 p-5">
@@ -584,6 +611,129 @@ export default function ProductEditor() {
         </div>
       </div>
     </div>
+  );
+}
+
+interface PendingFile {
+  storageKey: string;
+  url: string;
+  type: "image" | "datasheet";
+  name: string;
+}
+
+/** Add-product page: pick photos and the datasheet up front; they attach when the product is created. */
+function NewProductMedia({
+  pending,
+  setPending,
+  uploading,
+  setUploading,
+  editable,
+}: {
+  pending: PendingFile[];
+  setPending: (u: (p: PendingFile[]) => PendingFile[]) => void;
+  uploading: number;
+  setUploading: (u: (n: number) => number) => void;
+  editable: boolean;
+}) {
+  const toast = useToast();
+  const images = pending.filter((m) => m.type === "image");
+  const datasheet = pending.find((m) => m.type === "datasheet");
+  const add = async (files: File[], type: "image" | "datasheet") => {
+    setUploading((n) => n + files.length);
+    for (const file of files) {
+      try {
+        const up = await uploadFile(file, type);
+        const item: PendingFile = { storageKey: up.storageKey, url: up.url, type, name: file.name };
+        setPending((p) => (type === "datasheet" ? [...p.filter((x) => x.type !== "datasheet"), item] : [...p, item]));
+      } catch (e) {
+        toast(`${file.name}: ${errorText(e, "upload failed")}`, "error");
+      } finally {
+        setUploading((n) => n - 1);
+      }
+    }
+  };
+  const remove = (key: string) => setPending((p) => p.filter((x) => x.storageKey !== key));
+  const makeCover = (key: string) =>
+    setPending((p) => {
+      const m = p.find((x) => x.storageKey === key)!;
+      return [m, ...p.filter((x) => x.storageKey !== key)];
+    });
+
+  return (
+    <section className="card grid gap-5 p-5" data-testid="new-product-media">
+      <div>
+        <h2 className="font-semibold">Images & datasheet</h2>
+        <p className="mt-1 text-sm text-muted">Add them now. They are attached when you click Create product.</p>
+      </div>
+      <div>
+        <p className="label">Product photos</p>
+        {images.length > 0 && (
+          <ul className="mb-3 grid grid-cols-3 gap-2 sm:grid-cols-4" data-testid="pending-images">
+            {images.map((m, i) => (
+              <li key={m.storageKey} className="group relative overflow-hidden rounded-xl border border-line bg-white">
+                <img src={m.url} alt="" className="aspect-square w-full object-contain p-1.5" />
+                {i === 0 ? (
+                  <span className="absolute top-1.5 left-1.5 rounded-full bg-ink/80 px-2 py-0.5 text-[10px] font-semibold text-paper">Cover</span>
+                ) : (
+                  editable && (
+                    <button type="button" className="absolute bottom-1.5 left-1.5 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-ink shadow" onClick={() => makeCover(m.storageKey)}>
+                      Make cover
+                    </button>
+                  )
+                )}
+                {editable && (
+                  <button type="button" aria-label={`Remove ${m.name}`} className="absolute top-1.5 right-1.5 grid size-6 place-items-center rounded-full bg-white/90 text-danger shadow" onClick={() => remove(m.storageKey)}>
+                    <Trash2 className="size-3.5" />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {editable && (
+          <FileDrop
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            label={images.length ? "Add more photos" : "Add product photos"}
+            hint="JPG, PNG or WebP. The first photo is the cover. Large photos are resized automatically."
+            busy={uploading > 0}
+            onFiles={(fs) => void add(fs, "image")}
+            testId="new-images"
+          />
+        )}
+      </div>
+      <div>
+        <p className="label">Datasheet (PDF)</p>
+        {datasheet && (
+          <div className="mb-3 flex items-center gap-3 rounded-xl border border-line bg-paper-2/50 px-3 py-2.5" data-testid="pending-datasheet">
+            <FileText className="size-5 shrink-0 text-verdi-700" />
+            <span className="min-w-0 flex-1 truncate text-sm" title={datasheet.name}>
+              {datasheet.name}
+            </span>
+            {editable && (
+              <button type="button" aria-label="Remove datasheet" className="rounded-full p-1.5 text-danger hover:bg-danger-bg" onClick={() => remove(datasheet.storageKey)}>
+                <Trash2 className="size-4" />
+              </button>
+            )}
+          </div>
+        )}
+        {editable && (
+          <FileDrop
+            accept="application/pdf"
+            label={datasheet ? "Replace datasheet" : "Add the datasheet PDF"}
+            hint="The manufacturer's PDF. Customers can view and download it on the product page."
+            busy={uploading > 0}
+            onFiles={(fs) => void add(fs.slice(0, 1), "datasheet")}
+            testId="new-datasheet"
+          />
+        )}
+      </div>
+      {uploading > 0 && (
+        <p className="flex items-center gap-2 text-sm text-muted">
+          <Spinner className="size-4" /> Uploading {uploading} file{uploading === 1 ? "" : "s"}…
+        </p>
+      )}
+    </section>
   );
 }
 

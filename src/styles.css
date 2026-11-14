@@ -85,6 +85,12 @@
 }
 
 @layer base {
+  /* Layout safety: a grid without its own column template gets ONE column that may shrink
+     (minmax(0,1fr) instead of "auto"), so long file names, emails or links truncate/wrap instead
+     of stretching cards past the screen. Any grid-cols-* utility still overrides this. */
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
   html {
     -webkit-text-size-adjust: 100%;
     scroll-padding-top: 5.5rem;

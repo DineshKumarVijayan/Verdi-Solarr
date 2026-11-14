@@ -73,16 +73,22 @@ test("admin adds a brand, category and product with specs, price, image and data
   await page.getByLabel("Field key, row 1").fill("power_wp");
   await page.getByTestId("new-price").fill("14,250.50");
   await page.getByLabel("GST rate").selectOption("12");
+  // Photos + datasheet picked on the Add page itself (uploaded now, attached on Create)
+  const pdf = (await import("node:fs")).readdirSync("public/datasheets").find((f) => f.endsWith(".pdf"))!;
+  await page.getByTestId("new-images").setInputFiles(["public/images/site/acdb-boxes.webp", "public/images/site/anchor-module-pallets.webp"]);
+  await expect(page.getByTestId("pending-images").locator("li")).toHaveCount(2);
+  await page.getByTestId("new-datasheet").setInputFiles(`public/datasheets/${pdf}`);
+  await expect(page.getByTestId("pending-datasheet")).toContainText(pdf);
+  await page.getByTestId("pending-images").getByRole("button", { name: "Make cover" }).click();
   await page.getByTestId("save-product").click();
   await expect(page).toHaveURL(/\/admin\/products\/\d+$/);
   await expect(page.getByText("Product created and published.")).toBeVisible();
-
-  // Image + datasheet uploads go to R2 and attach to the product
-  await page.getByTestId("upload-image").setInputFiles("public/images/site/acdb-boxes.webp");
-  await expect(page.getByTestId("product-images").locator("li")).toHaveCount(1);
-  const pdf = (await import("node:fs")).readdirSync("public/datasheets").find((f) => f.endsWith(".pdf"))!;
-  await page.getByTestId("upload-datasheet").setInputFiles(`public/datasheets/${pdf}`);
+  await expect(page.getByTestId("product-images").locator("li")).toHaveCount(2);
   await expect(page.getByTestId("current-datasheet")).toBeVisible();
+
+  // Adding more later from the edit page still works
+  await page.getByTestId("upload-image").setInputFiles("public/images/site/acdb-boxes.webp");
+  await expect(page.getByTestId("product-images").locator("li")).toHaveCount(3);
 
   // Public catalogue reflects everything (no admin fields leak)
   const cat = await (await request.get("/api/catalogue")).json();
@@ -242,7 +248,14 @@ test("customer registers, sends an enquiry, sees history, status and reward poin
   await expect(page.getByRole("alert")).toContainText("incorrect");
 
   // Admin issues a reset link; customer sets a new password and is signed in
-  const link = (await (await request.post(`/api/admin/customers/${enq.customerId}/reset-link`, { headers: H })).json()).url as string;
+  // (the shared test admin can hit the 120 writes/min limit during a full run: wait it out)
+  let resetRes = await request.post(`/api/admin/customers/${enq.customerId}/reset-link`, { headers: H });
+  for (let i = 0; i < 4 && resetRes.status() === 429; i++) {
+    await new Promise((r) => setTimeout(r, 20_000));
+    resetRes = await request.post(`/api/admin/customers/${enq.customerId}/reset-link`, { headers: H });
+  }
+  expect(resetRes.status()).toBe(200);
+  const link = (await resetRes.json()).url as string;
   await page.goto(new URL(link).pathname + new URL(link).search);
   await page.getByLabel("New password").fill("brand-new-pass-2");
   await page.getByRole("button", { name: "Save new password" }).click();
