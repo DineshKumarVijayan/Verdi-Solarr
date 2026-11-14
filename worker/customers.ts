@@ -1,6 +1,7 @@
 // Customer accounts, sessions, enquiry recording/history and reward points.
 // Completely separate from admin authentication (which is Cloudflare Access + AdminUsers).
 
+import { CUSTOMER_MAX_DAYS, IDLE_MINUTES, SLIDE_EVERY_MINUTES } from "../shared/session";
 import {
   EnquiryCreateSchema,
   issues,
@@ -17,7 +18,8 @@ import { DUMMY_HASH, hashPassword, randomToken, sha256Hex, verifyPassword } from
 import type { Env } from "./env";
 import { HttpError, json, nowIso } from "./http";
 
-const SESSION_DAYS = 30;
+// Sessions: signed out after IDLE_MINUTES without activity; at most CUSTOMER_MAX_DAYS in total.
+const SESSION_DAYS = CUSTOMER_MAX_DAYS;
 const MAX_FAILED = 5;
 const LOCK_MINUTES = 15;
 
@@ -84,13 +86,21 @@ export async function currentCustomer(request: Request, env: Env): Promise<Custo
   const url = new URL(request.url);
   const token = readCookie(request, cookieName(url));
   if (!token || !/^[A-Za-z0-9_-]{30,100}$/.test(token)) return null;
-  return env.DB.prepare(
-    `SELECT c.CustomerId, c.FullName, c.Mobile, c.Email, c.BusinessName, c.City, c.CreatedAt
+  const now = new Date();
+  const hash = await sha256Hex(token);
+  const row = await env.DB.prepare(
+    `SELECT c.CustomerId, c.FullName, c.Mobile, c.Email, c.BusinessName, c.City, c.CreatedAt, s.ExpiresAt AS SessionExpiresAt
      FROM CustomerSessions s JOIN Customers c ON c.CustomerId = s.CustomerId
-     WHERE s.SessionHash = ?1 AND s.ExpiresAt > ?2 AND c.IsActive = 1`,
+     WHERE s.SessionHash = ?1 AND s.ExpiresAt > ?2 AND s.CreatedAt > ?3 AND c.IsActive = 1`,
   )
-    .bind(await sha256Hex(token), nowIso())
-    .first<CustomerRow>();
+    .bind(hash, now.toISOString(), new Date(now.getTime() - CUSTOMER_MAX_DAYS * 86400_000).toISOString())
+    .first<CustomerRow & { SessionExpiresAt: string }>();
+  if (!row) return null;
+  if (Date.parse(row.SessionExpiresAt) - now.getTime() < (IDLE_MINUTES - SLIDE_EVERY_MINUTES) * 60_000) {
+    await env.DB.prepare("UPDATE CustomerSessions SET ExpiresAt = ?1 WHERE SessionHash = ?2").bind(new Date(now.getTime() + IDLE_MINUTES * 60_000).toISOString(), hash).run();
+  }
+  const { SessionExpiresAt: _, ...customer } = row;
+  return customer;
 }
 
 async function requireCustomer(request: Request, env: Env): Promise<CustomerRow> {
@@ -102,7 +112,7 @@ async function requireCustomer(request: Request, env: Env): Promise<CustomerRow>
 async function startSession(request: Request, env: Env, customerId: number): Promise<string[]> {
   const token = randomToken();
   const now = new Date();
-  const expires = new Date(now.getTime() + SESSION_DAYS * 86400_000);
+  const expires = new Date(now.getTime() + IDLE_MINUTES * 60_000);
   await env.DB.batch([
     env.DB.prepare("DELETE FROM CustomerSessions WHERE ExpiresAt < ?1").bind(now.toISOString()), // expired sessions only
     env.DB.prepare("INSERT INTO CustomerSessions (SessionHash, CustomerId, CreatedAt, ExpiresAt, UserAgent) VALUES (?1, ?2, ?3, ?4, ?5)").bind(

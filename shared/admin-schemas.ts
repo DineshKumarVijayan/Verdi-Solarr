@@ -179,7 +179,14 @@ export const FieldPhotoInputSchema = z
 
 export const AdminUserInputSchema = z
   .object({
-    email: z.string().trim().toLowerCase().email("Enter a valid email").max(200),
+    /** Optional: staff sign in with their mobile number. */
+    email: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .max(200)
+      .refine((v) => v === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "Enter a valid email")
+      .default(""),
     displayName: optText(80),
     role: z.enum(["owner", "admin", "price_editor", "viewer"]),
     isActive: z.boolean().default(true),
@@ -276,6 +283,14 @@ export const ProfileUpdateSchema = z
 export const PasswordChangeSchema = z
   .object({
     currentPassword: z.string().min(1, "Enter your current password").max(128),
+    newPassword: password,
+  })
+  .strict();
+
+export const AdminPasswordChangeSchema = z
+  .object({
+    login: z.string().trim().min(3, "Enter your mobile number").max(200),
+    currentPassword: z.string().min(1, "Enter your current or temporary password").max(128),
     newPassword: password,
   })
   .strict();

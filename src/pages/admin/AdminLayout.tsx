@@ -1,8 +1,11 @@
-import { ClipboardList, FileText, Images, LayoutDashboard, Layers, LockKeyhole, LogOut, Package, Settings, ShieldAlert, ShieldCheck, Tags, Users } from "lucide-react";
-import { createContext, useCallback, useContext, useEffect, useState, type FormEvent } from "react";
+import { ClipboardList, FileText, Images, KeyRound, LayoutDashboard, Layers, LogOut, Package, Settings, ShieldAlert, ShieldCheck, Tags, Users } from "lucide-react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router";
 import type { AdminIdentity } from "../../../shared/types";
-import { Spinner } from "../../components/ui";
+import { Modal, Spinner } from "../../components/ui";
+import { markActive } from "../../lib/idle";
+import { IDLE_MINUTES } from "../../../shared/session";
+import { AdminLogin, ChangePasswordForm } from "./AdminAuth";
 import { api, ApiError } from "../../lib/api";
 import { usePageMeta } from "../../lib/seo";
 
@@ -24,7 +27,26 @@ export const useAdmin = () => useContext(AdminCtx)!;
 
 export default function AdminLayout() {
   usePageMeta("Admin", undefined, { noindex: true });
-  const [state, setState] = useState<{ admin?: AdminIdentity; error?: ApiError } | null>(null);
+  const [state, setState] = useState<{ admin?: AdminIdentity; error?: ApiError; notice?: string; relogin?: string } | null>(null);
+  const [pwOpen, setPwOpen] = useState(false);
+  const signedIn = (admin: AdminIdentity) => {
+    markActive();
+    setState({ admin });
+    setPwOpen(false);
+    window.dispatchEvent(new CustomEvent("vs:admin-signed-in", { detail: admin }));
+  };
+  // Session ended (idle timeout, password changed elsewhere, account disabled): back to sign-in.
+  useEffect(() => {
+    const expired = () =>
+      setState((s) => (s?.admin ? { ...s, relogin: `You were signed out (after ${IDLE_MINUTES} minutes of inactivity, or from another device). Sign in again to continue — your unsaved changes are still on the page.` } : s));
+    const out = () => setState((s) => (s?.admin && !s.relogin ? { error: new ApiError(401, "signed_out", "Signed out.") } : s));
+    window.addEventListener("vs:admin-expired", expired);
+    window.addEventListener("vs:admin-signed-out", out);
+    return () => {
+      window.removeEventListener("vs:admin-expired", expired);
+      window.removeEventListener("vs:admin-signed-out", out);
+    };
+  }, []);
 
   const check = useCallback(() => {
     api<{ admin: AdminIdentity }>("/api/admin/me")
@@ -43,7 +65,7 @@ export default function AdminLayout() {
       </div>
     );
 
-  if (state.error?.status === 401) return <AdminLogin onDone={(admin) => setState({ admin })} />;
+  if (state.error?.status === 401) return <AdminLogin onDone={signedIn} notice={state.notice} />;
   if (state.error) {
     return (
       <div className="container-x py-24">
@@ -62,7 +84,9 @@ export default function AdminLayout() {
   const admin = state.admin!;
   const signOut = async () => {
     await api("/api/admin/logout", { method: "POST", body: "{}" }).catch(() => undefined);
+    document.cookie = "vs_staff=; Path=/; Max-Age=0";
     setState({ error: new ApiError(401, "signed_out", "Signed out.") });
+    window.dispatchEvent(new Event("vs:admin-expired"));
   };
   return (
     <AdminCtx.Provider value={admin}>
@@ -78,67 +102,28 @@ export default function AdminLayout() {
           </nav>
           <div className="ml-auto flex items-center gap-3 text-xs text-paper/60">
             <span className="hidden sm:inline">
-              {admin.displayName ?? admin.email} · <span className="text-paper/90">{admin.role.replace("_", " ")}</span>
+              {admin.displayName || admin.email.split("@")[0]} · <span className="text-paper/90">{admin.role.replace("_", " ")}</span>
             </span>
+            <button type="button" onClick={() => setPwOpen(true)} className="inline-flex items-center gap-1 hover:text-paper" data-testid="admin-change-password">
+              <KeyRound className="size-3.5" /> Password
+            </button>
             <button type="button" onClick={signOut} className="inline-flex items-center gap-1 hover:text-paper" data-testid="admin-sign-out">
               <LogOut className="size-3.5" /> Sign out
             </button>
           </div>
         </div>
       </div>
-      <Outlet />
+      <Outlet key={admin.email} />
+      {state.relogin && (
+        <div className="fixed inset-0 z-[80] overflow-auto bg-ink/75 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Sign in again" data-testid="relogin-overlay">
+          <AdminLogin onDone={signedIn} notice={state.relogin} />
+        </div>
+      )}
+      <Modal open={pwOpen} onClose={() => setPwOpen(false)} title="Change your password" description="Your other devices will be signed out.">
+        <div className="p-5">
+          {pwOpen && <ChangePasswordForm initialLogin={admin.email} lockLogin onDone={signedIn} onCancel={() => setPwOpen(false)} />}
+        </div>
+      </Modal>
     </AdminCtx.Provider>
-  );
-}
-
-function AdminLogin({ onDone }: { onDone: (a: AdminIdentity) => void }) {
-  const [login, setLogin] = useState("");
-  const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      const r = await api<{ admin: AdminIdentity }>("/api/admin/login", { method: "POST", body: JSON.stringify({ login, password }) });
-      onDone(r.admin);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Sign-in failed.");
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <div className="container-x py-16 sm:py-24">
-      <form className="card mx-auto grid max-w-sm gap-4 p-6 sm:p-8" onSubmit={submit} noValidate data-testid="admin-login-form">
-        <LockKeyhole className="size-8 text-verdi-600" />
-        <div>
-          <h1 className="text-2xl font-semibold">Staff sign-in</h1>
-          <p className="mt-1 text-sm text-muted">For VERDI staff only.</p>
-        </div>
-        <div>
-          <label htmlFor="al-login" className="label">
-            Mobile number
-          </label>
-          <input id="al-login" type="tel" autoComplete="username" className="field" value={login} onChange={(e) => setLogin(e.target.value)} />
-        </div>
-        <div>
-          <label htmlFor="al-pw" className="label">
-            Password
-          </label>
-          <input id="al-pw" type="password" autoComplete="current-password" className="field" value={password} onChange={(e) => setPassword(e.target.value)} />
-        </div>
-        {error && (
-          <p role="alert" className="rounded-xl bg-danger-bg px-3 py-2 text-sm text-danger">
-            {error}
-          </p>
-        )}
-        <button type="submit" className="btn-primary" disabled={busy || !login || !password} data-testid="admin-login-submit">
-          {busy && <Spinner className="size-4" />} Sign in
-        </button>
-        <p className="text-xs text-subtle">Forgot your password? Ask the owner to set a new one in Admin users.</p>
-      </form>
-    </div>
   );
 }

@@ -16,13 +16,14 @@ const password = arg("password") ?? "";
 const name = arg("name") ?? null;
 const role = arg("role") ?? "owner";
 
-if (!email || !mobile || password.length < 8 || !["owner", "admin", "price_editor", "viewer"].includes(role)) {
+if (!mobile || password.length < 8 || !["owner", "admin", "price_editor", "viewer"].includes(role)) {
   console.error("Usage: npm run admin:set -- --email=... --mobile=10-digit --password=(8+ chars) [--name=...] [--role=owner|admin|price_editor|viewer] [--remote]");
   process.exit(1);
 }
 
-const sql = `INSERT INTO AdminUsers (Email, DisplayName, Role, Mobile, PasswordHash, IsActive) VALUES (${sqlString(email)}, ${sqlString(name)}, ${sqlString(role)}, ${sqlString(mobile)}, ${sqlString(await hashPassword(password))}, 1)
+const loginEmail = email || `${mobile}@staff.invalid`; // placeholder when no email is given (see shared/session.ts)
+const sql = `INSERT INTO AdminUsers (Email, DisplayName, Role, Mobile, PasswordHash, IsActive) VALUES (${sqlString(loginEmail)}, ${sqlString(name)}, ${sqlString(role)}, ${sqlString(mobile)}, ${sqlString(await hashPassword(password))}, 1)
 ON CONFLICT(Email) DO UPDATE SET Mobile = excluded.Mobile, PasswordHash = excluded.PasswordHash, Role = excluded.Role, IsActive = 1, FailedLogins = 0, LockedUntil = NULL, DisplayName = COALESCE(excluded.DisplayName, AdminUsers.DisplayName);`;
 
 await runD1(sql, remote);
-console.log(`Admin ${email} (${role}) can now sign in at /admin with mobile ${mobile.slice(2)}${remote ? " on PRODUCTION" : " locally"}.`);
+console.log(`Admin ${email || "(no email)"} (${role}) can now sign in at /admin with mobile ${mobile.slice(2)}${remote ? " on PRODUCTION" : " locally"}.`);

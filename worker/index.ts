@@ -5,7 +5,7 @@
 import { RevalidateSchema } from "../shared/schemas";
 import type { AdminIdentity } from "../shared/types";
 import { dashboard, listPrices, priceHistory, updatePrice } from "./admin";
-import { adminLogin, adminLogout, assertSameOrigin, requireAdmin } from "./auth";
+import { adminChangePassword, adminLogin, adminLogout, assertSameOrigin, requireAdmin, staffHintCookie } from "./auth";
 import * as quotes from "./quotations";
 import { handleCatalogue, revalidate } from "./catalogue";
 import { productPage, robots, sitemap } from "./seo";
@@ -116,6 +116,11 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     await rateLimit(env.AUTH_LIMITER ?? env.PUBLIC_LIMITER, `admin-login:${ip}`);
     return adminLogin(request, env, await readJson(request));
   }
+  if (path === "/api/admin/password" && method === "POST") {
+    customers.assertSameSite(request);
+    await rateLimit(env.AUTH_LIMITER ?? env.PUBLIC_LIMITER, `admin-login:${ip}`);
+    return adminChangePassword(request, env, await readJson(request));
+  }
   if (path === "/api/admin/logout" && method === "POST") {
     customers.assertSameSite(request);
     return adminLogout(request, env);
@@ -129,7 +134,9 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     }
 
     if (path === "/api/admin/me" && method === "GET") {
-      return json({ admin });
+      const res = json({ admin });
+      res.headers.append("Set-Cookie", staffHintCookie(url)); // lets the public header show the staff name
+      return res;
     }
     if (path === "/api/admin/dashboard" && method === "GET") return json(await dashboard(env));
     if (path === "/api/admin/prices" && method === "GET") return json(await listPrices(env, url));

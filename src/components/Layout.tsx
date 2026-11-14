@@ -8,6 +8,10 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
 import localPages from "../../data/local-pages.json";
 import { useAccount, useStaff } from "../lib/account";
+import { api } from "../lib/api";
+import { useIdleSignOut } from "../lib/idle";
+import { useToast } from "./ui";
+import { IDLE_MINUTES } from "../../shared/session";
 import { useBasket } from "../lib/basket";
 import { useCatalogue } from "../lib/catalogue";
 import { useCompare } from "../lib/compare";
@@ -32,6 +36,22 @@ export function Layout() {
   const isHome = loc.pathname === "/";
   const { customer, logout } = useAccount();
   const { staff, signOut: staffSignOut } = useStaff();
+  const toast = useToast();
+  useIdleSignOut({
+    active: !!customer || !!staff,
+    onTimeout: () => {
+      if (customer) void logout();
+      if (staff) {
+        window.dispatchEvent(new Event("vs:admin-expired")); // admin screen shows the reason first
+        void staffSignOut();
+      }
+      toast(`You were signed out after ${IDLE_MINUTES} minutes of inactivity.`, "info");
+    },
+    keepAlive: () => {
+      if (customer) void api("/api/account/me").catch(() => undefined);
+      if (staff) void api("/api/admin/me").catch(() => undefined);
+    },
+  });
   // Signed-in customers get their own menu item (enquiry history & reward points).
   const nav = customer ? [...NAV, { to: "/account", label: "My account" }] : NAV;
 

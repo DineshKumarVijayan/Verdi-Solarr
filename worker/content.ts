@@ -37,6 +37,7 @@ import {
   type SiteSettingKey,
 } from "../shared/types";
 import { mediaUrl, publishCatalogue, purgeCatalogueEdgeCache } from "./catalogue";
+import { isPlaceholderEmail, PLACEHOLDER_EMAIL_DOMAIN } from "../shared/session";
 import { hashPassword, randomToken } from "./crypto";
 import { issueResetLink, loadEnquiries, rewardLedger, toEnquiryView } from "./customers";
 import type { Env } from "./env";
@@ -683,12 +684,13 @@ export async function saveSettings(env: Env, admin: AdminIdentity, body: unknown
 // ------------------------------------------------------------------ admin users (owner only)
 
 export async function listAdminUsers(env: Env): Promise<AdminUserRow[]> {
-  const r = await env.DB.prepare("SELECT AdminId, Email, Mobile, PasswordHash IS NOT NULL AS HasPw, DisplayName, Role, IsActive, CreatedAt, LastLoginAt FROM AdminUsers ORDER BY IsActive DESC, Role, Email").all<Record<string, unknown>>();
+  const r = await env.DB.prepare("SELECT AdminId, Email, Mobile, PasswordHash IS NOT NULL AS HasPw, MustChangePassword, DisplayName, Role, IsActive, CreatedAt, LastLoginAt FROM AdminUsers ORDER BY IsActive DESC, Role, DisplayName, Email").all<Record<string, unknown>>();
   return r.results.map((x) => ({
     id: x.AdminId as number,
-    email: x.Email as string,
+    email: isPlaceholderEmail(x.Email as string) ? "" : (x.Email as string),
     mobile: (x.Mobile as string) ?? null,
     hasPassword: x.HasPw === 1,
+    mustChangePassword: x.MustChangePassword === 1,
     displayName: (x.DisplayName as string) ?? null,
     role: x.Role as AdminRole,
     isActive: x.IsActive === 1,
@@ -699,13 +701,18 @@ export async function listAdminUsers(env: Env): Promise<AdminUserRow[]> {
 
 export async function saveAdminUser(env: Env, admin: AdminIdentity, id: number | null, body: unknown) {
   requireRole(admin, ["owner"], "manage admin users");
-  const v = parse(AdminUserInputSchema, body);
+  const input = parse(AdminUserInputSchema, body);
+  // No email: an internal placeholder keeps the (required, unique) Email column valid.
+  const v = { ...input, email: input.email || `${input.mobile}@${PLACEHOLDER_EMAIL_DOMAIN}` };
   const now = nowIso();
   const before = id ? await env.DB.prepare("SELECT AdminId, Email, Mobile, DisplayName, Role, IsActive FROM AdminUsers WHERE AdminId = ?1").bind(id).first<Record<string, unknown>>() : null;
   if (id && !before) throw new HttpError(404, "not_found", "Admin user not found.");
   if (!id && !v.password) throw new HttpError(422, "validation", "Set a password for the new admin.", [{ path: "password", message: "Required (at least 8 characters)" }]);
   const hash = v.password ? await hashPassword(v.password) : null;
-  if (before && String(before.Email).toLowerCase() === admin.email && (v.role !== "owner" || !v.isActive)) {
+  const self = !!before && String(before.Email).toLowerCase() === admin.email;
+  // Someone else's new/reset password is temporary: they must choose their own at next sign-in.
+  const mustChange = hash && !self ? 1 : 0;
+  if (self && (v.role !== "owner" || !v.isActive)) {
     throw new HttpError(422, "self_lockout", "You cannot remove your own owner access. Ask another owner to do it.");
   }
   if (before && before.Role === "owner" && (v.role !== "owner" || !v.isActive)) {
@@ -715,9 +722,9 @@ export async function saveAdminUser(env: Env, admin: AdminIdentity, id: number |
   const stmts = [
     id
       ? env.DB.prepare(
-          "UPDATE AdminUsers SET Email = ?1, DisplayName = ?2, Role = ?3, IsActive = ?4, Mobile = ?5, PasswordHash = COALESCE(?6, PasswordHash), FailedLogins = CASE WHEN ?6 IS NULL THEN FailedLogins ELSE 0 END, LockedUntil = CASE WHEN ?6 IS NULL THEN LockedUntil ELSE NULL END, UpdatedAt = ?7 WHERE AdminId = ?8",
-        ).bind(v.email, v.displayName, v.role, b(v.isActive), v.mobile, hash, now, id)
-      : env.DB.prepare("INSERT INTO AdminUsers (Email, DisplayName, Role, IsActive, Mobile, PasswordHash, CreatedAt, UpdatedAt) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)").bind(
+          "UPDATE AdminUsers SET Email = ?1, DisplayName = ?2, Role = ?3, IsActive = ?4, Mobile = ?5, PasswordHash = COALESCE(?6, PasswordHash), FailedLogins = CASE WHEN ?6 IS NULL THEN FailedLogins ELSE 0 END, LockedUntil = CASE WHEN ?6 IS NULL THEN LockedUntil ELSE NULL END, MustChangePassword = CASE WHEN ?6 IS NULL THEN MustChangePassword ELSE ?9 END, PasswordChangedAt = CASE WHEN ?6 IS NULL THEN PasswordChangedAt ELSE ?7 END, UpdatedAt = ?7 WHERE AdminId = ?8",
+        ).bind(v.email, v.displayName, v.role, b(v.isActive), v.mobile, hash, now, id, mustChange)
+      : env.DB.prepare("INSERT INTO AdminUsers (Email, DisplayName, Role, IsActive, Mobile, PasswordHash, MustChangePassword, CreatedAt, UpdatedAt) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1, ?7, ?7)").bind(
           v.email,
           v.displayName,
           v.role,
@@ -733,7 +740,7 @@ export async function saveAdminUser(env: Env, admin: AdminIdentity, id: number |
   if (id && (hash || !v.isActive)) {
     stmts.push(env.DB.prepare("DELETE FROM AdminSessions WHERE AdminId = ?1 AND ?2 = 0").bind(id, b(String(before!.Email).toLowerCase() === admin.email && v.isActive)));
   }
-  await unique(env.DB.batch(stmts), "This email or mobile number is already used by another admin.");
+  await unique(env.DB.batch(stmts), "This mobile number or email is already used by another staff member.");
   return { users: await listAdminUsers(env) };
 }
 

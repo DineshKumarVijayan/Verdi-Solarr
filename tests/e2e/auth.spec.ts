@@ -13,10 +13,10 @@ test("admin signs in with mobile + password, wrong password is rejected, sign ou
   await page.goto("/admin");
   await expect(page.getByTestId("admin-login-form")).toBeVisible();
   await page.getByLabel("Mobile number").fill(OWNER.mobile);
-  await page.getByLabel("Password").fill("not-the-password");
+  await page.getByLabel("Password", { exact: true }).fill("not-the-password");
   await page.getByTestId("admin-login-submit").click();
   await expect(page.getByRole("alert")).toContainText("incorrect");
-  await page.getByLabel("Password").fill(OWNER.password);
+  await page.getByLabel("Password", { exact: true }).fill(OWNER.password);
   await page.getByTestId("admin-login-submit").click();
   await expect(page.getByRole("heading", { name: /Welcome/ })).toBeVisible();
   await page.getByTestId("admin-sign-out").click();

@@ -9,7 +9,12 @@ export class ApiError extends Error {
   }
 }
 
+/** When the signed-in identity last changed; 401s from requests sent before that are stale. */
+let authChangedAt = 0;
+const AUTH_PATHS = /^\/api\/(admin\/(login|password)|account\/(login|register|reset|password))$/;
+
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const sentAt = Date.now();
   let res: Response;
   try {
     res = await fetch(path, {
@@ -34,7 +39,12 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   if (!res.ok) {
     const e = (data as { error?: { code: string; message: string; details?: unknown } })?.error;
+    if (res.status === 401 && typeof window !== "undefined" && sentAt >= authChangedAt) {
+      if (path.startsWith("/api/admin/") && !/^\/api\/admin\/(login|password)/.test(path)) window.dispatchEvent(new Event("vs:admin-expired"));
+      else if (path.startsWith("/api/account/") && !/^\/api\/account\/(login|register|reset)/.test(path)) window.dispatchEvent(new Event("vs:account-expired"));
+    }
     throw new ApiError(res.status, e?.code ?? "http", e?.message ?? `Request failed (${res.status}).`, e?.details);
   }
+  if (AUTH_PATHS.test(path)) authChangedAt = Date.now();
   return data as T;
 }

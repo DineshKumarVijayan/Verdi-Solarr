@@ -73,7 +73,7 @@ export default function Users() {
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="border-b border-line text-xs text-muted">
               <tr>
-                <th className="p-3 font-medium">Email</th>
+                <th className="p-3 font-medium">Staff member</th>
                 <th className="p-3 font-medium">Role</th>
                 <th className="p-3 font-medium">Status</th>
                 <th className="p-3 font-medium">Last sign-in</th>
@@ -84,11 +84,12 @@ export default function Users() {
               {users.map((u) => (
                 <tr key={u.id} className="border-b border-line/60 last:border-0" data-testid="admin-user-row">
                   <td className="p-3">
-                    <p className="font-semibold">{u.email}</p>
+                    <p className="font-semibold">{u.displayName || (u.mobile ? formatMobile(u.mobile) : u.email)}</p>
                     <p className="text-xs text-muted">
-                      {[u.displayName, u.mobile ? formatMobile(u.mobile) : "no mobile set"].filter(Boolean).join(" · ")}
+                      {[u.mobile ? formatMobile(u.mobile) : "no mobile set", u.email || null].filter(Boolean).join(" · ")}
                       {!u.hasPassword && <span className="ml-1 text-danger">· no password (cannot sign in)</span>}
                     </p>
+                    {u.mustChangePassword && <p className="mt-1 inline-block rounded-full bg-sun-100 px-2 py-0.5 text-[11px] font-medium text-ink" data-testid="temp-password-badge">Temporary password · must set their own at next sign-in</p>}
                   </td>
                   <td className="p-3">{ROLES.find((r) => r.v === u.role)?.label}</td>
                   <td className="p-3">
@@ -96,7 +97,7 @@ export default function Users() {
                   </td>
                   <td className="p-3 text-xs text-muted">{dt(u.lastLoginAt)}</td>
                   <td className="p-3 text-right">
-                    <button type="button" className="rounded-full p-2 text-muted hover:bg-paper-2" aria-label={`Edit ${u.email}`} onClick={() => (setErrs({}), setEdit({ id: u.id, email: u.email, mobile: u.mobile ? formatMobile(u.mobile) : "", password: "", displayName: u.displayName ?? "", role: u.role, isActive: u.isActive }))}>
+                    <button type="button" className="rounded-full p-2 text-muted hover:bg-paper-2" aria-label={`Edit ${u.displayName || u.mobile || u.email}`} onClick={() => (setErrs({}), setEdit({ id: u.id, email: u.email, mobile: u.mobile ? formatMobile(u.mobile) : "", password: "", displayName: u.displayName ?? "", role: u.role, isActive: u.isActive }))}>
                       <Pencil className="size-4" />
                     </button>
                   </td>
@@ -140,11 +141,15 @@ export default function Users() {
                 {edit.id ? "New password (leave empty to keep the current one)" : "Password"}
               </label>
               <input id="au-pw" type="password" autoComplete="new-password" className={`field ${errs.password ? "!border-danger" : ""}`} value={edit.password} onChange={(e) => setEdit({ ...edit, password: e.target.value })} />
-              {errs.password ? <p className="mt-1 text-xs text-danger">{errs.password}</p> : <p className="mt-1 text-xs text-subtle">At least 8 characters. Share it with the person privately.</p>}
+              {errs.password ? (
+                <p className="mt-1 text-xs text-danger">{errs.password}</p>
+              ) : (
+                <p className="mt-1 text-xs text-subtle">At least 8 characters. This is a temporary password: share it privately. They will be asked to choose their own password when they first sign in.</p>
+              )}
             </div>
             <div>
               <label htmlFor="au-email" className="label">
-                Email (for records)
+                Email (optional)
               </label>
               <input id="au-email" type="email" className={`field ${errs.email ? "!border-danger" : ""}`} value={edit.email} onChange={(e) => setEdit({ ...edit, email: e.target.value })} />
               {errs.email && <p className="mt-1 text-xs text-danger">{errs.email}</p>}

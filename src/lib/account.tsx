@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { RegisterInput } from "../../shared/admin-schemas";
 import type { AdminIdentity, CustomerProfile } from "../../shared/types";
 import { api } from "./api";
+import { markActive } from "./idle";
 
 interface AccountState {
   customer: CustomerProfile | null;
@@ -45,10 +46,25 @@ export function useStaff(): { staff: AdminIdentity | null; signOut: () => Promis
       live = false;
     };
   }, [hint]);
+  // Sign-in / expiry in the admin area updates the public header at once.
+  useEffect(() => {
+    const ended = () => {
+      document.cookie = "vs_staff=; Path=/; Max-Age=0";
+      setStaff(null);
+    };
+    const started = (e: Event) => setStaff((e as CustomEvent<AdminIdentity>).detail);
+    window.addEventListener("vs:admin-expired", ended);
+    window.addEventListener("vs:admin-signed-in", started);
+    return () => {
+      window.removeEventListener("vs:admin-expired", ended);
+      window.removeEventListener("vs:admin-signed-in", started);
+    };
+  }, []);
   const signOut = useCallback(async () => {
     await api("/api/admin/logout", { method: "POST", body: "{}" }).catch(() => undefined);
     document.cookie = "vs_staff=; Path=/; Max-Age=0";
     setStaff(null);
+    window.dispatchEvent(new Event("vs:admin-signed-out"));
   }, []);
   return { staff, signOut };
 }
@@ -74,19 +90,31 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     if (mightBeSignedIn()) void refresh(); // anonymous visitors never call the Worker
   }, [refresh]);
 
+  // Session ended on the server (idle timeout, signed out elsewhere): reflect it at once.
+  useEffect(() => {
+    const ended = () => setCustomer(null);
+    window.addEventListener("vs:account-expired", ended);
+    return () => window.removeEventListener("vs:account-expired", ended);
+  }, []);
+
   const value = useMemo<AccountState>(
     () => ({
       customer,
       checking,
-      setCustomer,
+      setCustomer: (c: CustomerProfile | null) => {
+        if (c) markActive(); // e.g. signed in by a password-reset link
+        setCustomer(c);
+      },
       refresh,
       login: async (login, password) => {
         const r = await post("/api/account/login", { login, password });
+        markActive();
         setCustomer(r.customer);
         return r.customer;
       },
       register: async (input) => {
         const r = await post("/api/account/register", input);
+        markActive();
         setCustomer(r.customer);
         return r.customer;
       },

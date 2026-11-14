@@ -262,6 +262,7 @@ export interface AdminUserRow {
   email: string;
   mobile: string | null;
   hasPassword: boolean;
+  mustChangePassword: boolean;
   displayName: string | null;
   role: AdminRole;
   isActive: boolean;
