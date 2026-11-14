@@ -1,8 +1,8 @@
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { AnimatePresence, useMotionTemplate, useMotionValue, useSpring, useTransform } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
-import type { PublicProduct } from "../../../shared/types";
+import type { PublicCategory, PublicProduct } from "../../../shared/types";
 import { useCatalogue } from "../../lib/catalogue";
 import { m, Reveal } from "../motion";
 
@@ -59,7 +59,7 @@ export function CatalogueShowcase() {
   const active = cats[Math.min(i, Math.max(cats.length - 1, 0))];
 
   useEffect(() => {
-    if (paused || cats.length < 2) return;
+    if (paused || cats.length < 2 || !window.matchMedia("(min-width: 1024px)").matches) return;
     const id = setTimeout(() => setI((x) => (x + 1) % cats.length), 5200);
     return () => clearTimeout(id);
   }, [i, paused, cats.length]);
@@ -77,7 +77,7 @@ export function CatalogueShowcase() {
 
   if (!active) return null;
   return (
-    <section className="relative overflow-hidden py-20" data-pause-offscreen onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+    <section className="relative overflow-hidden py-12 sm:py-20" data-pause-offscreen onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
       <div className="container-x">
         <Reveal className="flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-2xl">
@@ -89,7 +89,9 @@ export function CatalogueShowcase() {
           </Link>
         </Reveal>
 
-        <div className="mt-10 grid gap-6 lg:grid-cols-[360px_1fr]">
+        <MobileCatalogue cats={cats} products={data?.products ?? []} count={(id) => countByCategory.get(id) ?? 0} />
+
+        <div className="mt-10 hidden gap-6 lg:grid lg:grid-cols-[360px_1fr]">
           {/* category rail */}
           <div className="grid content-start gap-2" role="tablist" aria-label="Product categories">
             {cats.map((c, k) => (
@@ -225,5 +227,114 @@ export function CatalogueShowcase() {
         )}
       </div>
     </section>
+  );
+}
+
+/**
+ * Phones & tablets: one swipeable card per category (snap carousel). The centred card is full size,
+ * its picture zooms in and floats and its highlights slide in; neighbours shrink and dim. Every card
+ * sizes to its content, so nothing is cut off.
+ */
+function MobileCatalogue({ cats, products, count }: { cats: PublicCategory[]; products: PublicProduct[]; count: (id: number) => number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) if (e.isIntersecting) setActive(Number((e.target as HTMLElement).dataset.i));
+      },
+      { root, threshold: 0.6 },
+    );
+    root.querySelectorAll("[data-i]").forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [cats.length]);
+
+  const go = (k: number) => {
+    const root = ref.current;
+    const card = root?.querySelector<HTMLElement>(`[data-i="${k}"]`);
+    if (root && card) root.scrollTo({ left: card.offsetLeft - (root.clientWidth - card.clientWidth) / 2, behavior: "smooth" });
+  };
+
+  return (
+    <div className="mt-8 lg:hidden" data-testid="catalogue-cards">
+      <div ref={ref} className="scrollbar-none -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-[8%] pt-1 pb-3 sm:px-[20%]" aria-label="Product categories">
+        {cats.map((c, k) => {
+          const on = k === active;
+          const pic = (VISUALS[c.slug] ?? [])[0];
+          const chips = highlights(
+            products.filter((p) => p.categoryId === c.id),
+            c.slug,
+          ).slice(0, 3);
+          return (
+            <Link
+              key={c.id}
+              data-i={k}
+              to={`/category/${c.slug}`}
+              className={`group relative w-[84%] shrink-0 snap-center overflow-hidden rounded-[1.75rem] bg-[radial-gradient(120%_100%_at_70%_10%,#1d3a4d_0%,#0a1822_65%)] text-paper shadow-[var(--shadow-lift)] flex flex-col transition-transform duration-500 ease-out active:scale-[0.98] sm:w-[60%] ${on ? "scale-100" : "scale-[0.93]"}`}
+              data-testid="catalogue-card"
+            >
+              {/* picture */}
+              <div className="relative h-48 overflow-hidden">
+                <div className="absolute inset-0 grid-bg opacity-60" aria-hidden="true" />
+                <div className={`absolute top-1/2 left-1/2 size-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(249,162,27,0.35),transparent_65%)] transition-opacity duration-700 ${on ? "opacity-100" : "opacity-0"}`} aria-hidden="true" />
+                {pic && (
+                  <div className={`absolute inset-0 transition-transform duration-[1200ms] ease-out ${on ? "scale-100" : "scale-[0.88]"}`}>
+                    <img
+                      src={pic.src}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className={`size-full ${pic.cutout ? "object-contain p-5 drop-shadow-[0_18px_24px_rgba(0,0,0,0.55)]" : "object-cover"} ${on && pic.cutout ? "float-y" : ""}`}
+                    />
+                  </div>
+                )}
+                {!pic?.cutout && <div className="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-[#0a1822] to-transparent" aria-hidden="true" />}
+                <span className="num absolute top-3 left-3 rounded-full bg-ink/70 px-2.5 py-1 text-[11px] text-sun-300">
+                  {String(k + 1).padStart(2, "0")} / {String(cats.length).padStart(2, "0")}
+                </span>
+              </div>
+              {/* side cards: dimmed with a dark veil (keeps them dark instead of greyed-out) */}
+              <span className={`pointer-events-none absolute inset-0 z-10 rounded-[1.75rem] bg-[#0a1822] transition-opacity duration-500 ${on ? "opacity-0" : "opacity-50"}`} aria-hidden="true" />
+              {/* text */}
+              <div className="flex flex-1 flex-col p-5 pt-3">
+                <p className="num text-[11px] tracking-[0.14em] text-sun-300 uppercase">{count(c.id)} models · datasheets</p>
+                <h3 className="mt-1 text-2xl leading-tight font-semibold">{c.name}</h3>
+                <ul className="mt-3 flex flex-wrap gap-1.5">
+                  {chips.map((t, j) => (
+                    <li
+                      key={t}
+                      className={`num rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] transition duration-500 ease-out ${on ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}
+                      style={{ transitionDelay: on ? `${150 + j * 90}ms` : "0ms" }}
+                    >
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+                <span className="mt-auto inline-flex items-center gap-1.5 pt-4 text-sm font-semibold text-sun-300">
+                  Explore <ArrowRight className="size-4 transition group-active:translate-x-1" />
+                </span>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+      {/* position dots */}
+      <div className="mt-2 flex justify-center gap-1.5" role="tablist" aria-label="Choose a category">
+        {cats.map((c, k) => (
+          <button
+            key={c.id}
+            type="button"
+            role="tab"
+            aria-selected={k === active}
+            aria-label={c.name}
+            onClick={() => go(k)}
+            className={`h-2 rounded-full transition-all duration-300 ${k === active ? "w-6 bg-ink" : "w-2 bg-line hover:bg-subtle"}`}
+          />
+        ))}
+      </div>
+    </div>
   );
 }

@@ -77,3 +77,16 @@ for (const path of ["/", "/products", "/products/anchor-ino-residential-single-p
     expect(errors).toEqual([]);
   });
 }
+
+test("home catalogue is a swipeable card carousel on phones; dots move between categories", async ({ page }) => {
+  await page.goto("/");
+  const cards = page.getByTestId("catalogue-cards");
+  await cards.scrollIntoViewIfNeeded();
+  await expect(cards.getByTestId("catalogue-card").first()).toBeVisible();
+  const dots = cards.getByRole("tab");
+  await expect(dots.first()).toHaveAttribute("aria-selected", "true");
+  await dots.nth(1).click();
+  await expect(dots.nth(1)).toHaveAttribute("aria-selected", "true");
+  // the desktop rail is not shown on phones
+  await expect(page.locator('[role="tablist"][aria-label="Product categories"]')).toBeHidden();
+});
