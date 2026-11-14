@@ -188,9 +188,24 @@ function EnquiryRow({ e, open, onToggle, onSaved }: { e: AdminEnquiryRow; open: 
               <textarea id={`nt-${e.id}`} rows={3} className="field" value={notes} disabled={!editable} onChange={(x) => setNotes(x.target.value)} />
             </div>
             {editable && (
-              <button type="button" className="btn-primary btn-sm justify-self-start" onClick={save} disabled={busy} data-testid="save-enquiry">
+              <div className="flex gap-2">
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                disabled={busy}
+                onClick={() => {
+                  setStatus(e.status);
+                  setNotes(e.adminNotes ?? "");
+                  onToggle();
+                }}
+                data-testid="cancel-enquiry"
+              >
+                Cancel
+              </button>
+              <button type="button" className="btn-primary btn-sm justify-self-start" onClick={save} disabled={busy || (status === e.status && notes === (e.adminNotes ?? ""))} data-testid="save-enquiry">
                 Save
               </button>
+              </div>
             )}
             {editable && e.customerId && (
               <div className="rounded-2xl bg-paper p-3">

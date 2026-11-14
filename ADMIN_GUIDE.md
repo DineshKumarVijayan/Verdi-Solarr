@@ -7,10 +7,10 @@ This guide is for VERDI staff. You don’t need any technical knowledge. Everyth
 2. Enter your **mobile number** and **password**, then click **Sign in**.
 3. **You are signed out after 30 minutes without activity** (and after 12 hours at most). This applies to customers too. If it happens while you are editing, a sign-in box appears over the page. Your unsaved changes are kept: sign in again and then save.
 4. **Change password**: use the link on the sign-in page (mobile number, current password, new password), or the **Password** button in the admin header. Changing your password signs out your other devices.
-5. **New staff / forgotten password**: the owner adds the person, or resets their password, in **Admin users** with a *temporary* password. At their next sign-in they must choose their own password before they can continue. The temporary password then stops working.
+5. **New staff / forgotten password**: the owner adds the person, or resets their password, in **Staff** (formerly Admin users) with a *temporary* password. At their next sign-in they must choose their own password before they can continue. The temporary password then stops working.
 6. Five wrong attempts lock the account for 15 minutes.
 
-Passwords are stored only as salted one-way hashes, so nobody can read them, including the owner and the developer. The **Admin users** list also decides what each person may do.
+Passwords are stored only as salted one-way hashes, so nobody can read them, including the owner and the developer. The **Staff** (formerly Admin users) list also decides what each person may do.
 
 | Role | Can do |
 |---|---|
@@ -20,7 +20,7 @@ Passwords are stored only as salted one-way hashes, so nobody can read them, inc
 | Viewer | Look only |
 
 ### Adding staff (owner)
-**Admin users → Add**: enter the mobile number (used to sign in), name, role and a temporary password. Email is optional. Share the temporary password privately. The list shows *Temporary password · must set their own* until the person has done so. To remove someone's access, edit the account and switch it to inactive. This signs them out immediately.
+**Staff → Add**: enter the mobile number (used to sign in), name, role and a temporary password. Email is optional. Share the temporary password privately. The list shows *Temporary password · must set their own* until the person has done so. To remove someone's access, edit the account and switch it to inactive. This signs them out immediately.
 
 ## Dashboard
 Shows new enquiries, customer accounts, products, missing prices, images and datasheets, and recent activity. Each tile is a shortcut.

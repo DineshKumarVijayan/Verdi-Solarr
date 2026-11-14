@@ -173,6 +173,18 @@ function CustomerModal({ id, onClose, onChanged }: { id: number; onClose: () => 
                     </button>
                   </div>
                   <input aria-label="Reason" className="field !py-1.5 text-ink" placeholder="Reason (shown to the customer)" value={reason} onChange={(e) => setReason(e.target.value)} />
+                  {(pts || reason) && (
+                    <button
+                      type="button"
+                      className="justify-self-start text-xs text-paper/70 underline hover:text-paper"
+                      onClick={() => {
+                        setPts("");
+                        setReason("");
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  )}
                 </form>
               )}
               {d.rewards.length > 0 && (

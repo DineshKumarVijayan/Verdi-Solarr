@@ -51,7 +51,7 @@ export default function Users() {
   return (
     <div className="container-x py-10">
       <PageHead
-        title="Admin users"
+        title="Staff"
         intro={
           <>
             Admin credentials. Staff sign in at <span className="font-mono text-xs">/admin</span> with their mobile number and password. Passwords are stored only as salted one-way hashes, so nobody (not even the owner) can read them; set a new one here if someone forgets theirs.

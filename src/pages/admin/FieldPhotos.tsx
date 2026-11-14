@@ -151,9 +151,14 @@ export default function FieldPhotos() {
                           <Trash2 className="size-4" />
                         </button>
                       </div>
+                      <div className="flex gap-2">
+                      <button type="button" className="btn-ghost btn-sm" disabled={!dirty} onClick={() => setDrafts(({ [orig.id]: _, ...rest }) => rest)}>
+                        Cancel
+                      </button>
                       <button type="button" className="btn-primary btn-sm" disabled={!dirty} onClick={() => save(p)}>
                         <Save className="size-3.5" /> Save
                       </button>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -1,6 +1,6 @@
 import { ClipboardList, FileText, Images, KeyRound, LayoutDashboard, Layers, LogOut, Package, Settings, ShieldAlert, ShieldCheck, Tags, Users } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { NavLink, Outlet } from "react-router";
+import { NavLink, Outlet, useLocation } from "react-router";
 import type { AdminIdentity } from "../../../shared/types";
 import { Modal, Spinner } from "../../components/ui";
 import { markActive } from "../../lib/idle";
@@ -13,13 +13,13 @@ const NAV = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/prices", label: "Prices", icon: Tags },
-  { to: "/admin/catalogue", label: "Brands & categories", icon: Layers },
-  { to: "/admin/field-photos", label: "Field photos", icon: Images },
+  { to: "/admin/catalogue", label: "Brands", icon: Layers },
+  { to: "/admin/field-photos", label: "Photos", icon: Images },
   { to: "/admin/enquiries", label: "Enquiries", icon: ClipboardList },
   { to: "/admin/quotations", label: "Quotations", icon: FileText },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/settings", label: "Settings", icon: Settings },
-  { to: "/admin/users", label: "Admin users", icon: ShieldCheck, owner: true },
+  { to: "/admin/users", label: "Staff", icon: ShieldCheck, owner: true },
 ];
 
 const AdminCtx = createContext<AdminIdentity | null>(null);
@@ -29,6 +29,11 @@ export default function AdminLayout() {
   usePageMeta("Admin", undefined, { noindex: true });
   const [state, setState] = useState<{ admin?: AdminIdentity; error?: ApiError; notice?: string; relogin?: string } | null>(null);
   const [pwOpen, setPwOpen] = useState(false);
+  const { pathname } = useLocation();
+  // Phones: the menu scrolls sideways; keep the current page visible in it.
+  useEffect(() => {
+    document.querySelector('nav[aria-label="Admin"] a[aria-current="page"]')?.scrollIntoView({ inline: "center", block: "nearest" });
+  }, [pathname, state?.admin]);
   const signedIn = (admin: AdminIdentity) => {
     markActive();
     setState({ admin });
@@ -93,9 +98,9 @@ export default function AdminLayout() {
       <div className="border-b border-line bg-ink text-paper">
         <div className="container-x flex flex-wrap items-center gap-3 py-3">
           <span className="rounded-full bg-sun-400 px-2.5 py-0.5 font-mono text-[10px] font-semibold tracking-widest text-ink uppercase">Admin</span>
-          <nav aria-label="Admin" className="scrollbar-none -mx-1 order-last flex min-w-0 basis-full gap-1 overflow-x-auto px-1">
+          <nav aria-label="Admin" className="scrollbar-none -mx-1 order-last flex min-w-0 basis-full gap-1 overflow-x-auto px-1 max-lg:[mask-image:linear-gradient(90deg,black_90%,transparent)] lg:flex-wrap lg:overflow-visible">
             {NAV.filter((n) => !n.owner || admin.role === "owner").map((n) => (
-              <NavLink key={n.to} end={n.end} to={n.to} className={({ isActive }) => `inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm whitespace-nowrap ${isActive ? "bg-white/10 text-paper" : "text-paper/70 hover:text-paper"}`}>
+              <NavLink key={n.to} end={n.end} to={n.to} className={({ isActive }) => `inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm whitespace-nowrap lg:px-2.5 xl:px-3 ${isActive ? "bg-white/10 text-paper" : "text-paper/70 hover:text-paper"}`}>
                 <n.icon className="size-4" /> {n.label}
               </NavLink>
             ))}

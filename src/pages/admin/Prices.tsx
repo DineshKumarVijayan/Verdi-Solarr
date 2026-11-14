@@ -346,8 +346,8 @@ function PriceEditor({ row, canEdit, onClose, onSaved }: { row: AdminPriceRow; c
               <button type="submit" className="btn-primary" disabled={saving} data-testid="save-price">
                 {saving ? <Spinner className="size-4" /> : <Check className="size-4" />} Save price
               </button>
-              <button type="button" className="btn-ghost" onClick={onClose}>
-                Close
+              <button type="button" className="btn-ghost" onClick={onClose} data-testid="cancel-price">
+                Cancel
               </button>
             </div>
           )}

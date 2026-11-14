@@ -9,7 +9,7 @@ import { Spinner, useToast } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useCatalogue } from "../../lib/catalogue";
 import { useAdmin } from "./AdminLayout";
-import { canManage, errorText, FileDrop, fieldErrors, ReadOnlyNote, send, Toggle, uploadFile } from "./kit";
+import { canManage, confirmDiscard, errorText, FileDrop, fieldErrors, ReadOnlyNote, send, Toggle, uploadFile, useUnsavedWarning } from "./kit";
 
 const UNITS = ["per piece", "per metre", "per 100 m coil", "per 500 m coil", "per 2000 m drum", "per set", "per kit"];
 
@@ -70,6 +70,18 @@ export default function ProductEditor() {
   const [slugEditing, setSlugEditing] = useState(false);
   const [price, setPrice] = useState({ selling: "", mrp: "", gstRate: "18", gstIncluded: false, unit: "per piece" });
   const [busy, setBusy] = useState(false);
+  // Unsaved-changes tracking: snapshot of the form as last loaded/saved.
+  const baseline = useRef<string | null>(null);
+  const snapshot = JSON.stringify([f, price]);
+  if (baseline.current === null && (isNew || detail)) baseline.current = snapshot;
+  const dirty = editable && baseline.current !== null && snapshot !== baseline.current;
+  useUnsavedWarning(dirty);
+  const markSaved = () => {
+    baseline.current = null; // re-snapshot on the next render
+  };
+  const cancel = () => {
+    if (confirmDiscard(dirty)) nav("/admin/products");
+  };
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
   // Set right after "Create": we already hold the saved product, so the URL change must not refetch it
@@ -96,6 +108,8 @@ export default function ProductEditor() {
         if (!alive) return;
         setDetail(r.product);
         setF(fromDetail(r.product));
+        markSaved();
+      markSaved();
       })
       .catch((e) => alive && setLoadError(errorText(e)));
     return () => {
@@ -163,6 +177,7 @@ export default function ProductEditor() {
       const r = isNew ? await send<{ product: AdminProductDetail }>("/api/admin/products", "POST", payload) : await send<{ product: AdminProductDetail }>(`/api/admin/products/${id}`, "PUT", payload);
       setDetail(r.product);
       setF(fromDetail(r.product));
+      markSaved();
       reload();
       toast(isNew ? "Product created and published." : "Saved. Live on the website.", "success");
       if (isNew) {
@@ -228,6 +243,11 @@ export default function ProductEditor() {
             <a href={`/products/${detail.slug}`} target="_blank" rel="noopener" className="btn-ghost btn-sm">
               <ExternalLink className="size-4" /> View on website
             </a>
+          )}
+          {editable && (
+            <button type="button" className="btn-ghost btn-sm" onClick={cancel} disabled={busy} data-testid="cancel-product">
+              Cancel
+            </button>
           )}
           {editable && (
             <button type="button" className="btn-primary btn-sm" onClick={save} disabled={busy} data-testid="save-product">

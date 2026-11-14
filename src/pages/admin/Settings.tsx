@@ -74,9 +74,14 @@ export default function Settings() {
         intro="Contact details, social links and the announcement bar. Empty fields use the built-in default (shown faintly)."
         actions={
           editable && (
-            <button type="button" className="btn-primary btn-sm" onClick={save} disabled={busy || !dirty} data-testid="save-settings">
-              {busy ? <Spinner className="size-4" /> : <Save className="size-4" />} Save settings
-            </button>
+            <div className="flex gap-2">
+              <button type="button" className="btn-ghost btn-sm" onClick={() => setValues(saved)} disabled={busy || !dirty} data-testid="cancel-settings">
+                Cancel
+              </button>
+              <button type="button" className="btn-primary btn-sm" onClick={save} disabled={busy || !dirty} data-testid="save-settings">
+                {busy ? <Spinner className="size-4" /> : <Save className="size-4" />} Save settings
+              </button>
+            </div>
           )
         }
       />

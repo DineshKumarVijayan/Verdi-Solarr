@@ -12,7 +12,7 @@ import { api } from "../../lib/api";
 import { useCatalogue } from "../../lib/catalogue";
 import { useSite } from "../../lib/site";
 import { useAdmin } from "./AdminLayout";
-import { canManage, dt, errorText, PageHead, send } from "./kit";
+import { canManage, confirmDiscard, dt, errorText, PageHead, send, useUnsavedWarning } from "./kit";
 
 const PdfViewer = lazy(() => import("../../components/PdfViewer"));
 
@@ -154,6 +154,10 @@ function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }
       title="Quotation PDF details"
       description="Printed on every quotation. Leave blank to leave them off."
       footer={
+        <div className="flex justify-end gap-2">
+        <button type="button" className="btn-ghost" onClick={onClose} disabled={busy}>
+          Cancel
+        </button>
         <button
           type="button"
           className="btn-primary"
@@ -181,6 +185,7 @@ function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }
         >
           {busy ? <Spinner className="size-4" /> : <Save className="size-4" />} Save
         </button>
+        </div>
       }
     >
       {!v ? (
@@ -232,6 +237,10 @@ function Editor({ id }: { id: number | null }) {
   const [dirty, setDirty] = useState(false);
   const [pdf, setPdf] = useState<{ url: string; blob: Blob; filename: string } | null>(null);
   const initFromEnquiry = useRef(false);
+  useUnsavedWarning(dirty);
+  const cancel = () => {
+    if (confirmDiscard(dirty)) nav("/admin/quotations");
+  };
 
   // load settings + quotation
   useEffect(() => {
@@ -629,7 +638,7 @@ function Editor({ id }: { id: number | null }) {
             </label>
             {error && <p className="mt-4 rounded-xl bg-danger-bg p-3 text-sm text-danger" role="alert">{error}</p>}
             <div className="mt-5 grid gap-2 max-lg:hidden">
-              <ActionButtons busy={busy} dirty={dirty} hasQuote={!!quote} onSave={() => run("save", async () => void ((await save()) && toast("Quotation saved", "success")))} onPreview={() => run("preview", preview)} />
+              <ActionButtons busy={busy} dirty={dirty} hasQuote={!!quote} onSave={() => run("save", async () => void ((await save()) && toast("Quotation saved", "success")))} onPreview={() => run("preview", preview)} onCancel={cancel} />
             </div>
           </div>
         </aside>
@@ -642,7 +651,7 @@ function Editor({ id }: { id: number | null }) {
             <p className="text-xs text-muted">Total</p>
             <p className="num truncate font-semibold">{formatPaise(totals.total)}</p>
           </div>
-          <ActionButtons busy={busy} dirty={dirty} hasQuote={!!quote} compact onSave={() => run("save", async () => void ((await save()) && toast("Quotation saved", "success")))} onPreview={() => run("preview", preview)} />
+          <ActionButtons busy={busy} dirty={dirty} hasQuote={!!quote} compact onCancel={cancel} onSave={() => run("save", async () => void ((await save()) && toast("Quotation saved", "success")))} onPreview={() => run("preview", preview)} />
         </div>
       </div>
 
@@ -678,9 +687,12 @@ function Editor({ id }: { id: number | null }) {
   );
 }
 
-function ActionButtons({ busy, dirty, hasQuote, compact, onSave, onPreview }: { busy: string | null; dirty: boolean; hasQuote: boolean; compact?: boolean; onSave: () => void; onPreview: () => void }) {
+function ActionButtons({ busy, dirty, hasQuote, compact, onSave, onPreview, onCancel }: { busy: string | null; dirty: boolean; hasQuote: boolean; compact?: boolean; onSave: () => void; onPreview: () => void; onCancel: () => void }) {
   return (
     <>
+      <button type="button" className={`btn-ghost ${compact ? "btn-sm" : ""}`} disabled={!!busy} onClick={onCancel} data-testid="q-cancel">
+        Cancel
+      </button>
       <button type="button" className={`btn-ghost ${compact ? "btn-sm" : ""}`} disabled={!!busy || (hasQuote && !dirty)} onClick={onSave} data-testid="q-save">
         {busy === "save" ? <Spinner className="size-4" /> : <Save className="size-4" />} {hasQuote ? "Save" : "Save draft"}
       </button>

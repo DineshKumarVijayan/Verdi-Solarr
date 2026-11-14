@@ -1,5 +1,5 @@
 import { UploadCloud } from "lucide-react";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { AdminIdentity } from "../../../shared/types";
 import { Spinner } from "../../components/ui";
 import { api, ApiError } from "../../lib/api";
@@ -10,6 +10,22 @@ export function send<T>(path: string, method: "POST" | "PUT" | "DELETE", body?: 
 }
 
 export const canManage = (a: AdminIdentity) => a.role === "owner" || a.role === "admin";
+
+/** Ask before throwing away unsaved changes. Returns true when it is fine to leave. */
+export const confirmDiscard = (dirty: boolean) => !dirty || window.confirm("Discard your unsaved changes?");
+
+/** Warn when closing or reloading the tab with unsaved changes. */
+export function useUnsavedWarning(dirty: boolean) {
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+}
 
 export function errorText(e: unknown, fallback = "Something went wrong."): string {
   return e instanceof ApiError ? e.message : fallback;

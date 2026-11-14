@@ -390,9 +390,22 @@ function ProfileCard() {
         </div>
       ))}
       <p className="text-xs text-subtle">Mobile {formatMobile(c.mobile)} is your sign-in ID. To change it, contact us.</p>
-      <button type="submit" className="btn-ghost btn-sm justify-self-start" disabled={busy}>
-        {busy && <Spinner className="size-4" />} Save profile
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className="btn-ghost btn-sm"
+          disabled={busy}
+          onClick={() => {
+            setF({ name: c.name, email: c.email ?? "", business: c.business ?? "", city: c.city ?? "" });
+            setErrs({});
+          }}
+        >
+          Cancel
+        </button>
+        <button type="submit" className="btn-primary btn-sm" disabled={busy || (f.name === c.name && f.email === (c.email ?? "") && f.business === (c.business ?? "") && f.city === (c.city ?? ""))}>
+          {busy && <Spinner className="size-4" />} Save profile
+        </button>
+      </div>
     </form>
   );
 }
@@ -438,9 +451,22 @@ function PasswordCard() {
         <input id="pw-new" type="password" autoComplete="new-password" className="field" value={f.newPassword} onChange={(e) => setF({ ...f, newPassword: e.target.value })} />
         {errs.newPassword && <p className="mt-1 text-xs text-danger">{errs.newPassword}</p>}
       </div>
-      <button type="submit" className="btn-ghost btn-sm justify-self-start" disabled={busy || !f.currentPassword || !f.newPassword}>
-        {busy && <Spinner className="size-4" />} Update password
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className="btn-ghost btn-sm"
+          disabled={busy || (!f.currentPassword && !f.newPassword)}
+          onClick={() => {
+            setF({ currentPassword: "", newPassword: "" });
+            setErrs({});
+          }}
+        >
+          Cancel
+        </button>
+        <button type="submit" className="btn-primary btn-sm" disabled={busy || !f.currentPassword || !f.newPassword}>
+          {busy && <Spinner className="size-4" />} Update password
+        </button>
+      </div>
     </form>
   );
 }
@@ -487,9 +513,14 @@ export function AccountReset() {
           <p className="mt-1 text-xs text-subtle">At least {PASSWORD_MIN} characters.</p>
         </div>
         {error && <p className="rounded-xl bg-danger-bg px-3 py-2 text-sm text-danger">{error}</p>}
-        <button type="submit" className="btn-primary" disabled={busy || pw.length < PASSWORD_MIN || !token}>
-          {busy && <Spinner className="size-4" />} Save new password
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <Link to="/" className="btn-ghost">
+            Cancel
+          </Link>
+          <button type="submit" className="btn-primary" disabled={busy || pw.length < PASSWORD_MIN || !token}>
+            {busy && <Spinner className="size-4" />} Save new password
+          </button>
+        </div>
         <p className="text-xs text-muted">
           Link expired?{" "}
           <Link to="/contact" className="inline-flex items-center gap-1 font-semibold text-verdi-700 underline">
