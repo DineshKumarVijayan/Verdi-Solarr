@@ -89,7 +89,7 @@ page("/", {
   title: "VERDI SOLARR SOLUTION — Solar panels, inverters & solar electricals for businesses",
   description: "B2B supplier of solar panels, inverters, solar DC cables and solar electrical components in Chennai. Browse real datasheets, compare specifications and send a WhatsApp enquiry.",
   jsonld: [organization],
-  body: `${nav}<h1>Power your next solar project.</h1><p>B2B supplier of solar modules, inverters, power optimisers, solar DC cables and solar street lights for dealers, installers, EPC contractors and businesses. Every model links to its manufacturer datasheet.</p><h2>Product categories</h2><ul>${categories.map((c) => `<li><a href="/category/${c.slug}">${esc(c.name)}</a>: ${esc(c.description)}</li>`).join("")}</ul><h2>Product families</h2><ul>${series.map((s) => `<li>${esc(brandName[s.brand])} ${esc(s.name)}: ${esc(s.short)}</li>`).join("")}</ul>${contact}`,
+  body: `${nav}<h1>Power your next solar project.</h1><p>B2B supplier of solar modules, inverters, power optimisers, solar DC cables and solar street lights for dealers, installers, EPC contractors and businesses. Every model links to its manufacturer datasheet.</p><h2>Product categories</h2><ul>${categories.map((c) => `<li><a href="/category/${c.slug}">${esc(c.name)}</a>: ${esc(c.description)}</li>`).join("")}</ul>${contact}`,
 });
 
 // ------------------------------------------------------- product index

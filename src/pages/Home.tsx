@@ -1,12 +1,9 @@
 import { ArrowRight, BookOpen, Calculator, ClipboardList, FileText, Layers, ShieldCheck } from "lucide-react";
-import { useMemo } from "react";
 import { Link } from "react-router";
-import type { PublicProduct } from "../../shared/types";
 import { CatalogueShowcase } from "../components/home/CatalogueShowcase";
 import { Hero } from "../components/home/Hero";
 import { VideoBand } from "../components/home/VideoBand";
-import { m, Reveal, Stagger, StaggerItem } from "../components/motion";
-import { ProductImage } from "../components/ProductVisual";
+import { Reveal, Stagger, StaggerItem } from "../components/motion";
 import { SectionHeading } from "../components/ui";
 import { WhatsAppIcon } from "../components/WhatsAppIcon";
 import { useCatalogue } from "../lib/catalogue";
@@ -19,17 +16,7 @@ export default function Home() {
     "VERDI SOLARR SOLUTION — Solar panels, inverters & solar electricals for businesses",
     "B2B supplier of solar panels, inverters, solar DC cables and solar electrical components in Chennai. Browse real datasheets, compare specifications and send a WhatsApp enquiry.",
   );
-  const { data, brand } = useCatalogue();
-
-  const series = useMemo(() => {
-    const mp = new Map<string, PublicProduct[]>();
-    for (const p of data?.products ?? []) {
-      const k = p.seriesKey ?? String(p.id);
-      if (!mp.has(k)) mp.set(k, []);
-      mp.get(k)!.push(p);
-    }
-    return [...mp.values()];
-  }, [data]);
+  const { data } = useCatalogue();
 
   const datasheetCount = new Set((data?.products ?? []).map((p) => p.datasheet).filter(Boolean)).size;
   const stats = [
@@ -43,36 +30,6 @@ export default function Home() {
     <>
       <Hero stats={stats} />
       <CatalogueShowcase />
-
-      {/* product families rail */}
-      <section className="border-y border-line/70 bg-paper-2/60 py-12 sm:py-20">
-        <Reveal className="container-x">
-          <SectionHeading eyebrow="Product families" title="One datasheet, every rating." intro="Each family is listed variant by variant, so every model has its own price and specification." />
-        </Reveal>
-        <div className="container-x mt-10">
-          <div className="scrollbar-none -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 sm:mx-0 sm:px-0">
-            {series.map((group, gi) => {
-              const p = group[0];
-              const variants = group.map((g) => g.variant).filter(Boolean);
-              return (
-                <m.div key={p.seriesKey ?? p.id} className="w-[78%] shrink-0 snap-start sm:w-[300px]" initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: gi * 0.06 }}>
-                  <Link to={`/products/${p.slug}`} className="group card flex h-full flex-col p-3 transition hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]">
-                    {p.images[0] ? <ProductImage url={p.images[0].url} alt={p.images[0].alt ?? p.name} /> : <div className="aspect-[4/3] rounded-2xl bg-paper-2" />}
-                    <div className="flex flex-1 flex-col p-2 pt-4">
-                      <p className="eyebrow !text-[0.62rem] !text-muted">{brand(p.brandId)?.name}</p>
-                      <h3 className="mt-1.5 font-semibold">{p.seriesName}</h3>
-                      <p className="num mt-auto pt-3 text-xs text-verdi-700">
-                        {group.length} {group.length === 1 ? "model" : "models"} · {variants[0]}
-                        {variants.length > 1 ? ` – ${variants[variants.length - 1]}` : ""}
-                      </p>
-                    </div>
-                  </Link>
-                </m.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
       <VideoBand />
 
