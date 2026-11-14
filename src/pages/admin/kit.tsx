@@ -11,9 +11,6 @@ export function send<T>(path: string, method: "POST" | "PUT" | "DELETE", body?: 
 
 export const canManage = (a: AdminIdentity) => a.role === "owner" || a.role === "admin";
 
-/** Ask before throwing away unsaved changes. Returns true when it is fine to leave. */
-export const confirmDiscard = (dirty: boolean) => !dirty || window.confirm("Discard your unsaved changes?");
-
 /** Warn when closing or reloading the tab with unsaved changes. */
 export function useUnsavedWarning(dirty: boolean) {
   useEffect(() => {

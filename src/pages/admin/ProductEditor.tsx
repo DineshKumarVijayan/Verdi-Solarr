@@ -1,3 +1,4 @@
+import { useConfirm, useConfirmDiscard } from "../../components/confirm";
 import { ArrowDown, ArrowLeft, ArrowUp, ExternalLink, FileText, Plus, Save, Star, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -9,7 +10,7 @@ import { Spinner, useToast } from "../../components/ui";
 import { api } from "../../lib/api";
 import { useCatalogue } from "../../lib/catalogue";
 import { useAdmin } from "./AdminLayout";
-import { canManage, confirmDiscard, errorText, FileDrop, fieldErrors, ReadOnlyNote, send, Toggle, uploadFile, useUnsavedWarning } from "./kit";
+import { canManage, errorText, FileDrop, fieldErrors, ReadOnlyNote, send, Toggle, uploadFile, useUnsavedWarning } from "./kit";
 
 const UNITS = ["per piece", "per metre", "per 100 m coil", "per 500 m coil", "per 2000 m drum", "per set", "per kit"];
 
@@ -59,6 +60,8 @@ export default function ProductEditor() {
   const admin = useAdmin();
   const editable = canManage(admin);
   const toast = useToast();
+  const confirm = useConfirm();
+  const confirmDiscard = useConfirmDiscard();
   const nav = useNavigate();
   const { data, reload } = useCatalogue();
 
@@ -79,8 +82,8 @@ export default function ProductEditor() {
   const markSaved = () => {
     baseline.current = null; // re-snapshot on the next render
   };
-  const cancel = () => {
-    if (confirmDiscard(dirty)) nav("/admin/products");
+  const cancel = async () => {
+    if (await confirmDiscard(dirty)) nav("/admin/products");
   };
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -193,7 +196,16 @@ export default function ProductEditor() {
   };
 
   const remove = async () => {
-    if (!detail || !confirm(`Permanently delete “${detail.name}”?\n\nIts price history is removed too (a copy is kept in the audit log). To keep it but take it off the website, switch “Visible on website” off instead.`)) return;
+    if (
+      !detail ||
+      !(await confirm({
+        title: `Permanently delete “${detail.name}”?`,
+        message: "Its price history is removed too (a copy is kept in the audit log). To keep it but take it off the website, switch “Visible on website” off instead.",
+        confirmLabel: "Delete product",
+        tone: "danger",
+      }))
+    )
+      return;
     try {
       await send(`/api/admin/products/${detail.id}`, "DELETE");
       reload();
@@ -378,10 +390,10 @@ export default function ProductEditor() {
                   aria-label="Copy specification fields from"
                   className="field !w-auto max-w-full min-w-0 !py-1.5 text-sm"
                   value=""
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const src = templates.find((p) => p.id === Number(e.target.value));
                     if (!src) return;
-                    if (f.specs.length && !confirm("Replace the current specification rows with the fields from this product? Values will be left blank for you to fill in.")) return;
+                    if (f.specs.length && !(await confirm({ title: "Replace the specification rows?", message: "The current rows are replaced with the fields from this product. Values are left blank for you to fill in.", confirmLabel: "Replace rows" }))) return;
                     set(
                       "specs",
                       src.specs.map((s) => ({ key: s.k, label: s.l, value: "", unit: s.u, group: s.g })),
@@ -577,6 +589,7 @@ export default function ProductEditor() {
 
 function MediaManager({ product, editable, onChange }: { product: AdminProductDetail; editable: boolean; onChange: (p: AdminProductDetail) => void }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState<"image" | "datasheet" | null>(null);
   const images = product.media.filter((m) => m.type === "image");
   const datasheet = product.media.find((m) => m.type === "datasheet" && m.isPrimary) ?? product.media.find((m) => m.type === "datasheet");
@@ -615,7 +628,7 @@ function MediaManager({ product, editable, onChange }: { product: AdminProductDe
     }
   };
   const del = async (m: AdminMedia) => {
-    if (!confirm(m.type === "image" ? "Remove this image?" : "Remove this datasheet?")) return;
+    if (!(await confirm({ title: m.type === "image" ? "Remove this image?" : "Remove this datasheet?", message: "It disappears from the product page straight away.", confirmLabel: "Remove", tone: "danger" }))) return;
     try {
       const r = await send<{ product: AdminProductDetail }>(`/api/admin/products/${product.id}/media/${m.id}`, "DELETE");
       onChange(r.product);

@@ -1,3 +1,4 @@
+import { useConfirm } from "../../components/confirm";
 import { Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
@@ -31,6 +32,7 @@ export default function Catalog() {
   const admin = useAdmin();
   const editable = canManage(admin);
   const toast = useToast();
+  const confirm = useConfirm();
   const { reload } = useCatalogue();
   const [brands, setBrands] = useState<AdminBrand[] | null>(null);
   const [cats, setCats] = useState<AdminCategory[] | null>(null);
@@ -82,7 +84,7 @@ export default function Catalog() {
     }
   };
   const delBrand = async (b: AdminBrand) => {
-    if (!confirm(`Delete the brand “${b.name}”?`)) return;
+    if (!(await confirm({ title: `Delete the brand “${b.name}”?`, message: "This cannot be undone. To keep it but take it off the website, edit it and switch it to hidden instead.", confirmLabel: "Delete brand", tone: "danger" }))) return;
     try {
       setBrands((await send<{ brands: AdminBrand[] }>(`/api/admin/brands/${b.id}`, "DELETE")).brands);
       reload();
@@ -91,7 +93,7 @@ export default function Catalog() {
     }
   };
   const delCat = async (c: AdminCategory) => {
-    if (!confirm(`Delete the category “${c.name}”?`)) return;
+    if (!(await confirm({ title: `Delete the category “${c.name}”?`, message: "This cannot be undone. To keep it but take it off the website, edit it and switch it to hidden instead.", confirmLabel: "Delete category", tone: "danger" }))) return;
     try {
       setCats((await send<{ categories: AdminCategory[] }>(`/api/admin/categories/${c.id}`, "DELETE")).categories);
       reload();

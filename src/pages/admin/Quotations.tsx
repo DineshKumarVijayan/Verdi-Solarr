@@ -1,9 +1,10 @@
-import { ArrowLeft, Download, Eye, FileText, Plus, Save, Search, Settings2, Share2, Trash2, X } from "lucide-react";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useConfirm, useConfirmDiscard } from "../../components/confirm";
+import { ArrowLeft, Building2, Download, Eye, FileText, ImagePlus, Plus, QrCode, Save, ScrollText, Search, Settings2, Share2, Trash2, X } from "lucide-react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { formatMobile } from "../../../shared/admin-schemas";
 import { formatPaise } from "../../../shared/money";
-import { lineAmounts, QUOTE_STATUSES, quoteTotals, validUntil, type DiscountType, type Quote, type QuoteRow, type QuoteSettings, type QuoteStatus } from "../../../shared/quotation";
+import { DEFAULT_TERMS, lineAmounts, mediaPath, QUOTE_STATUSES, quoteTotals, validUntil, type DiscountType, type Quote, type QuoteRow, type QuoteSettings, type QuoteStatus } from "../../../shared/quotation";
 import { paiseToRupeeInput, rupeesToPaise } from "../../../shared/schemas";
 import type { AdminEnquiryRow } from "../../../shared/types";
 import { Modal, Spinner, useToast } from "../../components/ui";
@@ -12,7 +13,7 @@ import { api } from "../../lib/api";
 import { useCatalogue } from "../../lib/catalogue";
 import { useSite } from "../../lib/site";
 import { useAdmin } from "./AdminLayout";
-import { canManage, confirmDiscard, dt, errorText, PageHead, send, useUnsavedWarning } from "./kit";
+import { canManage, dt, errorText, PageHead, send, uploadFile, useUnsavedWarning } from "./kit";
 
 const PdfViewer = lazy(() => import("../../components/PdfViewer"));
 
@@ -128,76 +129,168 @@ function List() {
 function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [v, setV] = useState<QuoteSettings | null>(null);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const toast = useToast();
   useEffect(() => {
-    if (open)
-      api<{ settings: QuoteSettings }>("/api/admin/quotations/settings")
-        .then((r) => setV(r.settings))
-        .catch((e) => setErr(errorText(e)));
+    if (!open) return;
+    setErr(null);
+    api<{ settings: QuoteSettings }>("/api/admin/quotations/settings")
+      .then((r) => setV(r.settings))
+      .catch((e) => setErr(errorText(e)));
   }, [open]);
-  const field = (k: keyof QuoteSettings, label: string, hint: string, multi = false) => (
+  const set = (k: keyof QuoteSettings, val: string) => setV((x) => ({ ...x, [k]: val }));
+
+  const text = (k: keyof QuoteSettings, label: string, hint: string, opts: { ph?: string; rows?: number; mono?: boolean; inputMode?: "numeric" } = {}) => (
     <label className="block">
-      <span className="text-sm font-medium">{label}</span>
-      {multi ? (
-        <textarea className="field mt-1 min-h-24" value={v?.[k] ?? ""} onChange={(e) => setV({ ...v, [k]: e.target.value })} />
+      <span className="text-sm font-medium text-ink">{label}</span>
+      {opts.rows ? (
+        <textarea className="field mt-1.5" rows={opts.rows} placeholder={opts.ph} value={v?.[k] ?? ""} onChange={(e) => set(k, e.target.value)} />
       ) : (
-        <input className="field mt-1" value={v?.[k] ?? ""} onChange={(e) => setV({ ...v, [k]: e.target.value })} />
+        <input className={`field mt-1.5 ${opts.mono ? "font-mono uppercase" : ""}`} inputMode={opts.inputMode} placeholder={opts.ph} value={v?.[k] ?? ""} onChange={(e) => set(k, e.target.value)} />
       )}
-      <span className="mt-1 block text-xs text-muted">{hint}</span>
+      <span className="mt-1.5 block text-xs leading-relaxed text-subtle">{hint}</span>
     </label>
   );
+  const section = (icon: ReactNode, title: string, intro: string, children: ReactNode) => (
+    <section className="rounded-2xl border border-line bg-paper/60 p-4 sm:p-5">
+      <div className="flex items-start gap-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-verdi-50 text-verdi-700">{icon}</span>
+        <div>
+          <h3 className="font-semibold text-ink">{title}</h3>
+          <p className="text-xs text-muted">{intro}</p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-4">{children}</div>
+    </section>
+  );
+
+  const uploadQr = async (file: File) => {
+    setUploading(true);
+    setErr(null);
+    try {
+      const up = await uploadFile(file, "logo");
+      set("quoteUpiQr", up.storageKey);
+    } catch (e) {
+      setErr(errorText(e));
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <Modal
       open={open}
       onClose={onClose}
       title="Quotation PDF details"
-      description="Printed on every quotation. Leave blank to leave them off."
+      description="Printed on every quotation. Leave a field blank to leave it off."
+      size="lg"
+      fullscreenOnMobile
       footer={
-        <div className="flex justify-end gap-2">
-        <button type="button" className="btn-ghost" onClick={onClose} disabled={busy}>
-          Cancel
-        </button>
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={!v || busy}
-          onClick={async () => {
-            setBusy(true);
-            setErr(null);
-            try {
-              const r = await send<{ settings: QuoteSettings }>("/api/admin/quotations/settings", "PUT", {
-                quoteGstin: v?.quoteGstin ?? "",
-                quoteValidDays: v?.quoteValidDays ?? "",
-                quoteSignatory: v?.quoteSignatory ?? "",
-                quoteTerms: v?.quoteTerms ?? "",
-                quoteBank: v?.quoteBank ?? "",
-              });
-              setV(r.settings);
-              toast("PDF details saved", "success");
-              onClose();
-            } catch (e) {
-              setErr(errorText(e));
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          {busy ? <Spinner className="size-4" /> : <Save className="size-4" />} Save
-        </button>
+        <div className="flex w-full justify-end gap-2">
+          <button type="button" className="btn-ghost" onClick={onClose} disabled={busy}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={!v || busy || uploading}
+            data-testid="save-quote-settings"
+            onClick={async () => {
+              setBusy(true);
+              setErr(null);
+              try {
+                const r = await send<{ settings: QuoteSettings }>("/api/admin/quotations/settings", "PUT", {
+                  quoteGstin: (v?.quoteGstin ?? "").trim().toUpperCase(),
+                  quoteValidDays: v?.quoteValidDays ?? "",
+                  quoteSignatory: v?.quoteSignatory ?? "",
+                  quoteTerms: v?.quoteTerms ?? "",
+                  quoteBank: v?.quoteBank ?? "",
+                  quoteUpiQr: v?.quoteUpiQr ?? "",
+                  quoteUpiId: (v?.quoteUpiId ?? "").trim(),
+                });
+                setV(r.settings);
+                toast("PDF details saved", "success");
+                onClose();
+              } catch (e) {
+                setErr(errorText(e));
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {busy ? <Spinner className="size-4" /> : <Save className="size-4" />} Save details
+          </button>
         </div>
       }
     >
       {!v ? (
-        <Spinner />
+        <div className="flex justify-center p-10">{err ? <p className="text-sm text-danger">{err}</p> : <Spinner />}</div>
       ) : (
-        <div className="grid gap-4">
-          {field("quoteGstin", "GSTIN", "15 characters, e.g. 33ABCDE1234F1Z5. Shown in the PDF header.")}
-          {field("quoteValidDays", "Default validity (days)", "Used for new quotations. Default 15.")}
-          {field("quoteSignatory", "Signatory name", "Printed under the signature line.")}
-          {field("quoteTerms", "Terms & conditions", "One per line. Leave blank for the standard generic terms.", true)}
-          {field("quoteBank", "Bank / UPI details", "Account name, number, IFSC, UPI ID — printed as entered.", true)}
-          {err && <p className="rounded-xl bg-danger-bg p-3 text-sm text-danger">{err}</p>}
+        <div className="grid gap-5 p-5 sm:p-6" data-testid="quote-settings">
+          {section(
+            <Building2 className="size-4.5" />,
+            "Business details",
+            "Shown in the PDF header and signature.",
+            <>
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+                {text("quoteGstin", "GSTIN", "15 characters, e.g. 33ABCDE1234F1Z5.", { ph: "Not registered / leave blank", mono: true })}
+                {text("quoteValidDays", "Default validity (days)", "For new quotations. Default 15.", { ph: "15", inputMode: "numeric" })}
+              </div>
+              {text("quoteSignatory", "Signatory name", "Printed under the signature line.", { ph: "e.g. Praveen" })}
+            </>,
+          )}
+
+          {section(
+            <QrCode className="size-4.5" />,
+            "Payment",
+            "Customers can scan the QR code on the quotation to pay with GPay, PhonePe, Paytm or any UPI app.",
+            <>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                <div className="grid size-36 shrink-0 place-items-center overflow-hidden rounded-2xl border border-dashed border-line bg-white" data-testid="upi-qr-preview">
+                  {v.quoteUpiQr ? <img src={mediaPath(v.quoteUpiQr)} alt="UPI QR code" className="size-full object-contain p-2" /> : <QrCode className="size-10 text-subtle" />}
+                </div>
+                <div className="grid flex-1 gap-3">
+                  <div className="flex flex-wrap gap-2">
+                    <label className={`btn-ghost btn-sm cursor-pointer ${uploading ? "pointer-events-none opacity-60" : ""}`}>
+                      {uploading ? <Spinner className="size-4" /> : <ImagePlus className="size-4" />} {v.quoteUpiQr ? "Replace QR code" : "Upload QR code"}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="sr-only"
+                        data-testid="upi-qr-input"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          e.target.value = "";
+                          if (f) void uploadQr(f);
+                        }}
+                      />
+                    </label>
+                    {v.quoteUpiQr && (
+                      <button type="button" className="btn-ghost btn-sm text-danger" onClick={() => set("quoteUpiQr", "")}>
+                        <Trash2 className="size-4" /> Remove
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs leading-relaxed text-subtle">In GPay: tap your profile photo → your QR code → Share / Download, then upload that image here. PNG or JPG, up to 2 MB.</p>
+                  {text("quoteUpiId", "UPI ID (optional)", "Printed under the QR code for customers who type it in.", { ph: "e.g. verdisolarr@okaxis" })}
+                </div>
+              </div>
+              {text("quoteBank", "Bank details (optional)", "Account name, number, IFSC and branch, printed as entered.", { rows: 3, ph: "A/c name: VERDI SOLARR SOLUTION\nA/c no: …\nIFSC: …" })}
+            </>,
+          )}
+
+          {section(
+            <ScrollText className="size-4.5" />,
+            "Terms & conditions",
+            "One per line. Leave blank to use the standard terms shown below.",
+            text("quoteTerms", "Terms", "The validity date is always added as the last line.", { rows: 5, ph: DEFAULT_TERMS }),
+          )}
+          {err && (
+            <p className="rounded-xl bg-danger-bg p-3 text-sm text-danger" role="alert">
+              {err}
+            </p>
+          )}
         </div>
       )}
     </Modal>
@@ -237,9 +330,11 @@ function Editor({ id }: { id: number | null }) {
   const [dirty, setDirty] = useState(false);
   const [pdf, setPdf] = useState<{ url: string; blob: Blob; filename: string } | null>(null);
   const initFromEnquiry = useRef(false);
+  const confirm = useConfirm();
+  const confirmDiscard = useConfirmDiscard();
   useUnsavedWarning(dirty);
-  const cancel = () => {
-    if (confirmDiscard(dirty)) nav("/admin/quotations");
+  const cancel = async () => {
+    if (await confirmDiscard(dirty)) nav("/admin/quotations");
   };
 
   // load settings + quotation
@@ -456,7 +551,7 @@ function Editor({ id }: { id: number | null }) {
   }
 
   async function remove() {
-    if (!quote || !confirm(`Delete quotation ${quote.number}? This cannot be undone.`)) return;
+    if (!quote || !(await confirm({ title: `Delete quotation ${quote.number}?`, message: "This cannot be undone. Any WhatsApp link already sent for it stops working.", confirmLabel: "Delete quotation", tone: "danger" }))) return;
     try {
       await send(`/api/admin/quotations/${quote.id}`, "DELETE");
       toast("Quotation deleted", "success");

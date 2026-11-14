@@ -8,9 +8,15 @@ export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
 export type DiscountType = "none" | "pct" | "amount";
 
 /** Admin-only quotation settings (kept out of the public catalogue snapshot). */
-export const QUOTE_SETTING_KEYS = ["quoteGstin", "quoteTerms", "quoteBank", "quoteSignatory", "quoteValidDays"] as const;
+export const QUOTE_SETTING_KEYS = ["quoteGstin", "quoteTerms", "quoteBank", "quoteSignatory", "quoteValidDays", "quoteUpiQr", "quoteUpiId"] as const;
+
+/** Public URL of an uploaded file (storage key "r2:logo/2026/11/abc.png" -> /api/media/logo/2026/11/abc.png). */
+export const mediaPath = (key: string) => (key.startsWith("r2:") ? `/api/media/${key.slice(3)}` : key);
 export type QuoteSettingKey = (typeof QUOTE_SETTING_KEYS)[number];
 export type QuoteSettings = Partial<Record<QuoteSettingKey, string>>;
+
+/** Generic terms used when the business has not entered its own (no invented commitments). */
+export const DEFAULT_TERMS = ["Prices are quoted in Indian Rupees.", "GST is as indicated against each item.", "Prices and availability are subject to confirmation at the time of order."].join("\n");
 
 const MAX_PAISE = 100_000_000_000;
 

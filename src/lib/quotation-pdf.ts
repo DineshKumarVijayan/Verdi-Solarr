@@ -3,7 +3,7 @@
 
 import { jsPDF } from "jspdf";
 import autoTableImport from "jspdf-autotable";
-import { validUntil, type Quote, type QuoteSettings } from "../../shared/quotation";
+import { DEFAULT_TERMS, mediaPath, validUntil, type Quote, type QuoteSettings } from "../../shared/quotation";
 import type { SiteInfo } from "./site";
 
 // The dev server pre-bundles the UMD build, where the function sits on `.default`.
@@ -87,11 +87,7 @@ async function loadImage(url: string, max: number, format: "JPEG" | "PNG"): Prom
 
 // ------------------------------------------------------------------ document
 
-export const DEFAULT_TERMS = [
-  "Prices are quoted in Indian Rupees.",
-  "GST is as indicated against each item.",
-  "Prices and availability are subject to confirmation at the time of order.",
-].join("\n");
+export { DEFAULT_TERMS };
 
 export async function buildQuotationPdf(q: Quote, site: SiteInfo, settings: QuoteSettings): Promise<{ blob: Blob; filename: string }> {
   const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
@@ -99,7 +95,11 @@ export async function buildQuotationPdf(q: Quote, site: SiteInfo, settings: Quot
   const H = doc.internal.pageSize.getHeight();
   const M = 14;
 
-  const [logo, ...thumbs] = await Promise.all([loadImage("/brand/verdi-logo.png", 400, "PNG"), ...q.items.map((i) => (i.imageUrl ? loadImage(i.imageUrl, 220, "JPEG") : Promise.resolve(null)))]);
+  const [logo, qr, ...thumbs] = await Promise.all([
+    loadImage("/brand/verdi-logo.png", 400, "PNG"),
+    settings.quoteUpiQr ? loadImage(mediaPath(settings.quoteUpiQr), 900, "PNG") : Promise.resolve(null), // PNG keeps the QR sharp
+    ...q.items.map((i) => (i.imageUrl ? loadImage(i.imageUrl, 220, "JPEG") : Promise.resolve(null))),
+  ]);
 
   // ---- header (first page)
   doc.setFillColor(...INK);
@@ -288,6 +288,61 @@ export async function buildQuotationPdf(q: Quote, site: SiteInfo, settings: Quot
   doc.text(inWords, W - M, y, { align: "right" });
   y += inWords.length * 4 + 6;
 
+  // ---- payment: UPI / GPay QR + UPI ID + bank details
+  if (qr || settings.quoteUpiId || settings.quoteBank) {
+    const qrH = qr ? 44 : 0;
+    const qrW = qr ? Math.min(44, (qr.w / qr.h) * qrH) : 0;
+    const tx0 = M + (qr ? qrW + 8 : 5);
+    const tw = W - M - tx0 - 5;
+    doc.setFontSize(8.5);
+    const bankLines = settings.quoteBank ? (doc.splitTextToSize(clean(settings.quoteBank), tw) as string[]) : [];
+    const textH = 8 + (qr ? 9 : 0) + (settings.quoteUpiId ? 7 : 0) + (bankLines.length ? 6 + bankLines.length * 4.2 : 0);
+    const boxH = Math.max(qrH, textH) + 8;
+    ensure(boxH + 4);
+    doc.setFillColor(246, 248, 249);
+    doc.setDrawColor(...LINE);
+    doc.roundedRect(M, y, W - 2 * M, boxH, 3, 3, "FD");
+    if (qr) {
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(M + 3, y + 3, qrW + 2, qrH + 2, 2, 2, "F");
+      doc.addImage(qr.data, "PNG", M + 4, y + 4, qrW, qrH);
+    }
+    let ty = y + 9;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...GREEN);
+    doc.text("PAYMENT", tx0, ty);
+    ty += 5.5;
+    if (qr) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10.5);
+      doc.setTextColor(...INK);
+      doc.text("Scan to pay with GPay, PhonePe, Paytm or any UPI app", tx0, ty, { maxWidth: tw });
+      ty += 9;
+    }
+    if (settings.quoteUpiId) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...MUTED);
+      doc.text("UPI ID:", tx0, ty);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...INK);
+      doc.text(clean(settings.quoteUpiId), tx0 + 13, ty);
+      ty += 7;
+    }
+    if (bankLines.length) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(...MUTED);
+      doc.text("BANK TRANSFER", tx0, ty);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(...INK);
+      doc.text(bankLines, tx0, ty + 5, { lineHeightFactor: 1.45 });
+    }
+    y += boxH + 8;
+  }
+
   // ---- notes, terms, bank
   const block = (title: string, text: string) => {
     const lines = doc.splitTextToSize(clean(text), W - 2 * M) as string[];
@@ -307,22 +362,37 @@ export async function buildQuotationPdf(q: Quote, site: SiteInfo, settings: Quot
     .split(/\n+/)
     .map((s) => s.trim())
     .filter(Boolean);
-  block("Terms & conditions", [...terms, `This quotation is valid until ${dateText(validUntil(q.createdAt, q.validDays))}.`].map((t, i) => `${i + 1}. ${t}`).join("\n"));
-  if (settings.quoteBank) block("Bank details", settings.quoteBank);
-
-  // ---- signature
-  ensure(26);
-  y += 4;
+  // ---- terms (left) and signature (right), side by side so a quotation usually fits one page
+  const termText = [...terms, `This quotation is valid until ${dateText(validUntil(q.createdAt, q.validDays))}.`].map((t, i) => `${i + 1}. ${clean(t)}`).join("\n");
+  const sigW = 62;
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  const termLines = doc.splitTextToSize(termText, W - 2 * M - sigW - 10) as string[];
+  const bandH = Math.max(9 + termLines.length * 4.2, 28);
+  ensure(bandH + 4);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...GREEN);
+  doc.text("TERMS & CONDITIONS", M, y);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...INK);
+  doc.text(termLines, M, y + 5, { lineHeightFactor: 1.45 });
+  // signature
   doc.setFontSize(9);
   doc.setTextColor(...INK);
-  doc.text(`For ${clean(site.name)}`, W - M, y, { align: "right" });
+  doc.text(`For ${clean(site.name)}`, W - M, y + 1, { align: "right" });
   doc.setDrawColor(...LINE);
-  doc.line(W - M - 60, y + 14, W - M, y + 14);
+  doc.line(W - M - sigW, y + 17, W - M, y + 17);
   doc.setFontSize(8.5);
   doc.setTextColor(...MUTED);
-  doc.text(clean(settings.quoteSignatory || site.contactPerson || "Authorised signatory"), W - M, y + 19, { align: "right" });
-  doc.text("Thank you for your enquiry!", M, y + 19);
+  doc.text(clean(settings.quoteSignatory || site.contactPerson || "Authorised signatory"), W - M, y + 22, { align: "right" });
+  y += bandH + 4;
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(9);
+  doc.setTextColor(...GREEN);
+  ensure(8);
+  doc.text("Thank you for your enquiry!", M, y);
 
   // ---- footer + page numbers on every page
   const pages = doc.getNumberOfPages();

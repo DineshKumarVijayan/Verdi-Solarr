@@ -72,3 +72,30 @@ test("quotation prices come from the database, not the browser", async ({ reques
   expect(quote.items[0].unitPaise).toBe(p.price.sellingPaise);
   await request.delete(`/api/admin/quotations/${quote.id}`, { headers: H });
 });
+
+test("PDF details: upload a UPI QR code and UPI ID; deleting uses the in-app confirmation", async ({ page, request }) => {
+  const before = (await (await request.get("/api/admin/quotations/settings")).json()).settings;
+  await page.goto("/admin/quotations");
+  await page.getByRole("button", { name: "PDF details" }).click();
+  await page.getByTestId("upi-qr-input").setInputFiles("public/brand/verdi-mark.png");
+  await expect(page.locator('[data-testid="upi-qr-preview"] img')).toBeVisible();
+  await page.getByPlaceholder("e.g. verdisolarr@okaxis").fill("verdisolarrsolution@okhdfcbank");
+  await page.getByTestId("save-quote-settings").click();
+  await expect(page.getByTestId("quote-settings")).toBeHidden();
+  const s = (await (await request.get("/api/admin/quotations/settings")).json()).settings;
+  expect(s.quoteUpiId).toBe("verdisolarrsolution@okhdfcbank");
+  expect(s.quoteUpiQr).toMatch(/^r2:logo\//);
+  // restore whatever was there
+  await request.put("/api/admin/quotations/settings", { headers: H, data: { quoteUpiQr: before.quoteUpiQr ?? "", quoteUpiId: before.quoteUpiId ?? "" } });
+
+  // delete -> styled confirmation dialog (Cancel keeps it, Delete removes it)
+  const r = await request.post("/api/admin/quotations", { headers: H, data: { customerName: NAME, validDays: 15, items: [{ productId: null, name: "Transport", unit: "per trip", qty: 1, unitPaise: 100000, discountType: "none", discountValue: 0 }] } });
+  const { quote } = await r.json();
+  await page.goto(`/admin/quotations/${quote.id}`);
+  await page.getByRole("button", { name: "Delete quotation" }).click();
+  await page.getByTestId("confirm-cancel").click();
+  await expect(page).toHaveURL(new RegExp(`/admin/quotations/${quote.id}$`));
+  await page.getByRole("button", { name: "Delete quotation" }).click();
+  await page.getByTestId("confirm-ok").click();
+  await expect(page).toHaveURL(/\/admin\/quotations$/);
+});

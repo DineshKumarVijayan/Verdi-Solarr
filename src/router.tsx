@@ -4,6 +4,7 @@ import { DatasheetProvider } from "./components/Datasheet";
 import { Layout } from "./components/Layout";
 import { MotionProvider } from "./components/motion";
 import { Spinner, ToastProvider } from "./components/ui";
+import { ConfirmProvider } from "./components/confirm";
 import { AccountProvider } from "./lib/account";
 import { BasketProvider } from "./lib/basket";
 import { CatalogueProvider } from "./lib/catalogue";
@@ -55,6 +56,7 @@ function Providers() {
   return (
     <MotionProvider>
     <ToastProvider>
+    <ConfirmProvider>
       <CatalogueProvider>
         <AccountProvider>
         <BasketProvider>
@@ -66,6 +68,7 @@ function Providers() {
         </BasketProvider>
         </AccountProvider>
       </CatalogueProvider>
+    </ConfirmProvider>
     </ToastProvider>
     </MotionProvider>
   );

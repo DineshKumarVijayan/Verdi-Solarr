@@ -345,6 +345,9 @@ export async function saveQuoteSettings(env: Env, admin: AdminIdentity, body: un
       quoteBank: z.string().trim().max(600),
       quoteSignatory: z.string().trim().max(120),
       quoteValidDays: z.union([z.literal(""), z.string().regex(/^\d{1,3}$/).refine((s) => Number(s) >= 1 && Number(s) <= 365, "Validity must be 1–365 days.")]),
+      // UPI / GPay QR code image, uploaded through /api/admin/uploads?kind=logo
+      quoteUpiQr: z.union([z.literal(""), z.string().regex(/^r2:logo\/\d{4}\/\d{2}\/[a-z0-9]+\.(webp|jpg|png)$/, "Upload the QR code image again.")]),
+      quoteUpiId: z.union([z.literal(""), z.string().trim().regex(/^[\w.-]{2,256}@[A-Za-z][A-Za-z0-9]{1,63}$/, "Enter a valid UPI ID, e.g. verdisolarr@okaxis")]),
     })
     .partial()
     .strict()

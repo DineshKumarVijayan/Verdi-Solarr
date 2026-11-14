@@ -1,3 +1,4 @@
+import { useConfirm } from "../../components/confirm";
 import { ArrowDown, ArrowUp, ExternalLink, Save, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { AdminFieldPhoto } from "../../../shared/types";
@@ -21,6 +22,7 @@ export default function FieldPhotos() {
   const admin = useAdmin();
   const editable = canManage(admin);
   const toast = useToast();
+  const confirm = useConfirm();
   const { reload } = useCatalogue();
   const [photos, setPhotos] = useState<AdminFieldPhoto[] | null>(null);
   const [drafts, setDrafts] = useState<Record<number, AdminFieldPhoto>>({});
@@ -63,7 +65,7 @@ export default function FieldPhotos() {
     }
   };
   const remove = async (p: AdminFieldPhoto) => {
-    if (!confirm(`Remove “${p.caption}” from the gallery?`)) return;
+    if (!(await confirm({ title: "Remove this photo?", message: `“${p.caption}” will be removed from the In the Field gallery.`, confirmLabel: "Remove photo", tone: "danger" }))) return;
     try {
       done(await send(`/api/admin/field-photos/${p.id}`, "DELETE"), "Photo removed.");
     } catch (e) {
