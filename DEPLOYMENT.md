@@ -12,12 +12,13 @@ Complete CLOUDFLARE_SETUP.md §1–3 first (D1 id in `wrangler.jsonc`, one manua
    |---|---|
    | Production branch | `main` |
    | Build command | `npm run build` |
-   | Deploy command | `npx wrangler deploy` |
-   | Non-production branch deploy command | `npx wrangler versions upload` (creates a preview / version URL without touching production) |
+   | Deploy command | `npm run deploy:production` (checks, then applies new database migrations, then deploys) |
+   | Non-production branch deploy command | `npx wrangler versions upload` (creates a preview / version URL; **never** migrates the database) |
    | Root directory | `/` |
    | Build variables | `SITE_URL=https://www.<your-domain>` (and `NODE_VERSION=22` if the default Node is older) |
 3. The Worker name in the dashboard must match `"name": "verdi-solarr"` in `wrangler.jsonc`, or the build fails.
 4. No secrets are needed in GitHub. Builds use Cloudflare’s own build token. Never commit `.dev.vars`.
+5. The build token must be allowed to change D1. If the first production deploy log shows an authorisation error at the `d1 migrations apply` step, open **Settings → Builds → API token** and add **Account → D1 → Edit**.
 
 **Behaviour:**
 - A push to `develop` or a pull request builds and uploads a **preview version**, and production is unchanged. The preview URL appears in the dashboard (and on the PR for supported providers).
@@ -26,13 +27,22 @@ Complete CLOUDFLARE_SETUP.md §1–3 first (D1 id in `wrangler.jsonc`, one manua
 
 **Recommended PR checks** (locally or in CI): `npm run typecheck && npm test && npm run build`.
 
-## 2. Database changes during deploys
-- Builds **do not** run migrations or seeds automatically, so production data is never reset by a push.
-- When a PR adds a file to `migrations/`: review it, then **before merging** run
-  `npx wrangler d1 export verdi-db --remote --output=backups/pre-<date>.sql` and `npm run db:migrate:remote`.
-  Migrations must be additive and backward compatible, so the currently live code keeps working.
-- To import new catalogue products: update `data/catalogue.mjs`, then `npm run db:seed:remote` (insert-only, prices untouched).
-- R2 objects and D1 rows are independent of frontend releases.
+## 2. Database changes during deploys (automatic)
+Every production deploy (merge to `main`) runs `npm run deploy:production`, which:
+1. **checks the migrations** (`scripts/check-migrations.mjs`, also run by every build):
+   - files that were already applied must be unchanged (pinned in `migrations/checksums.json`);
+   - migrations must be additive: `DROP TABLE`, `DROP COLUMN`, `DELETE FROM`, `TRUNCATE` and any write to `ProductPrices` (live prices) are refused, unless the file carries `-- allow-destructive: <reason>` approved by the owner;
+2. logs a **D1 Time Travel bookmark** (a restore point for the database just before the change);
+3. **applies only the new migration files** to the production database (`wrangler d1 migrations apply --remote`). Already-applied files are tracked in D1's `d1_migrations` table and never run twice;
+4. deploys the new code.
+
+If any step fails, the deploy stops and the current site keeps running unchanged. Preview builds (`develop`, pull requests) never touch the database.
+
+**Never automatic:** seeds and product imports (`npm run db:seed:remote`), price changes, and anything that deletes data. Products and prices are managed in the admin.
+
+**Writing a migration:** add `migrations/000N_description.sql` with additive SQL (`CREATE TABLE`, `ALTER TABLE … ADD COLUMN`, `CREATE INDEX`). It must stay compatible with the live code. Run `npm run db:migrate:local` (this pins it in `checksums.json`) and commit both files.
+
+**Restoring after a bad migration:** `npx wrangler d1 time-travel restore verdi-db --bookmark=<bookmark from the deploy log>` (Free plan: the last 7 days; paid: 30 days).
 
 ## 3. GoDaddy domain → Cloudflare
 A Workers **custom domain** needs the domain’s DNS zone on Cloudflare. On the Free plan that means changing the domain’s **nameservers** at GoDaddy to Cloudflare’s. This is **not** a domain transfer: GoDaddy stays the registrar and you keep renewing there.
