@@ -1,12 +1,13 @@
-import { ArrowRight, Clock, ClipboardList, GitCompareArrows, Mail, MapPin, Megaphone, Menu, Phone, Search, X } from "lucide-react";
+import { Clock, ClipboardList, GitCompareArrows, Mail, MapPin, Menu, Phone, Search, X } from "lucide-react";
 import { AccountMenu } from "./AccountMenu";
+import { Announcement } from "./Announcement";
 import { ContactFabs } from "./ContactFabs";
 import { MobileTabBar } from "./MobileTabBar";
 import { WhatsAppIcon } from "./WhatsAppIcon";
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
 import localPages from "../../data/local-pages.json";
-import { staffSignedIn, useAccount } from "../lib/account";
+import { useAccount, useStaff } from "../lib/account";
 import { useBasket } from "../lib/basket";
 import { useCatalogue } from "../lib/catalogue";
 import { useCompare } from "../lib/compare";
@@ -29,7 +30,8 @@ export function Layout() {
   const compare = useCompare();
   const loc = useLocation();
   const isHome = loc.pathname === "/";
-  const { customer } = useAccount();
+  const { customer, logout } = useAccount();
+  const { staff, signOut: staffSignOut } = useStaff();
   // Signed-in customers get their own menu item (enquiry history & reward points).
   const nav = customer ? [...NAV, { to: "/account", label: "My account" }] : NAV;
 
@@ -95,7 +97,7 @@ export function Layout() {
                 <span className="num absolute -top-0.5 -right-0.5 grid size-5 place-items-center rounded-full bg-verdi-500 text-[10px] font-bold text-white">{compare.ids.length}</span>
               </Link>
             )}
-            <AccountMenu dark={isHome} />
+            <AccountMenu dark={isHome} staff={staff} onStaffSignOut={staffSignOut} />
             <Link
               to="/enquiry"
               className={`relative inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold ${isHome ? "bg-sun-400 text-ink hover:bg-sun-300" : "bg-ink text-paper hover:bg-ink-3"}`}
@@ -116,7 +118,24 @@ export function Layout() {
         {menuOpen && (
           <nav id="mobile-nav" aria-label="Mobile" className={`border-t lg:hidden ${isHome ? "border-white/10" : "border-line"}`}>
             <ul className="container-x grid gap-1 py-3">
-              {[{ to: "/", label: "Home" }, ...NAV, { to: "/compare", label: "Compare" }, customer ? { to: "/account", label: "My enquiries & reward points" } : { to: "/account", label: "Sign in / Create account" }, { to: "/admin", label: staffSignedIn() ? "Admin dashboard" : "Staff sign-in" }].map((n) => (
+              {(customer || staff) && (
+                <li className="flex items-center justify-between gap-3 rounded-xl bg-paper-2/60 px-3 py-2.5 text-sm text-ink" data-testid="mobile-signed-in">
+                  <span className="min-w-0 truncate">
+                    Signed in as <b>{customer ? customer.name : staff!.displayName || staff!.email}</b>
+                    {!customer && staff ? " (staff)" : ""}
+                  </span>
+                  <button type="button" className="shrink-0 rounded-full border border-line px-3 py-1 font-medium" onClick={() => (customer ? logout() : staffSignOut())}>
+                    Sign out
+                  </button>
+                </li>
+              )}
+              {[
+                { to: "/", label: "Home" },
+                ...NAV,
+                { to: "/compare", label: "Compare" },
+                ...(customer ? [{ to: "/account", label: "My enquiries & reward points" }] : staff ? [] : [{ to: "/account", label: "Sign in / Create account" }]),
+                { to: "/admin", label: staff ? "Admin dashboard" : "Staff sign-in" },
+              ].map((n) => (
                 <li key={n.to}>
                   <NavLink to={n.to} end reloadDocument={n.to === "/admin"} className={({ isActive }) => `block rounded-xl px-3 py-3 text-base font-medium ${isActive ? "bg-verdi-600 text-white" : ""}`}>
                     {n.label}
@@ -137,37 +156,6 @@ export function Layout() {
       <MobileTabBar />
       <SearchPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <ScrollRestoration />
-    </div>
-  );
-}
-
-/** Admin-managed announcement (Admin → Settings). Hidden when empty. */
-function Announcement() {
-  const SITE = useSite();
-  if (!SITE.announcement) return null;
-  const inner = (
-    <>
-      <Megaphone className="size-4 shrink-0 text-sun-500" />
-      <span className="min-w-0 truncate">{SITE.announcement}</span>
-      {SITE.announcementLink && <ArrowRight className="size-3.5 shrink-0" />}
-    </>
-  );
-  const cls = "container-x flex items-center justify-center gap-2 py-2 text-sm font-medium";
-  return (
-    <div className="bg-sun-100 text-ink" data-testid="announcement">
-      {SITE.announcementLink ? (
-        SITE.announcementLink.startsWith("/") ? (
-          <Link to={SITE.announcementLink} className={`${cls} hover:underline`}>
-            {inner}
-          </Link>
-        ) : (
-          <a href={SITE.announcementLink} target="_blank" rel="noopener" className={`${cls} hover:underline`}>
-            {inner}
-          </a>
-        )
-      ) : (
-        <p className={cls}>{inner}</p>
-      )}
     </div>
   );
 }

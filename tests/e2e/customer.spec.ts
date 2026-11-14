@@ -107,7 +107,7 @@ test("enquiry: add, revalidate prices, preview and generate a WhatsApp link", as
 
 test("calculators compute client-side", async ({ page }) => {
   let apiCalls = 0;
-  page.on("request", (r) => r.url().includes("/api/") && !r.url().includes("/api/catalogue") && apiCalls++);
+  page.on("request", (r) => r.url().includes("/api/") && !r.url().includes("/api/catalogue") && !r.url().includes("/api/admin/me") && apiCalls++);
   await page.goto("/solar-tools/battery");
   await page.getByLabel("Capacity", { exact: true }).fill("100");
   await page.getByLabel("Connected load").fill("960");

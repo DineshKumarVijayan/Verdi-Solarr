@@ -33,6 +33,30 @@ export default function Products() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   useEffect(() => setQ(params.get("q") ?? ""), [params]);
   const qTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // Filter column: fit exactly into the visible space below its current top, so its last
+  // filters are reachable by scrolling the column itself, even before the page has scrolled.
+  const filterBox = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let frame = 0;
+    const fit = () => {
+      frame = 0;
+      const el = filterBox.current;
+      if (!el) return;
+      const top = Math.max(el.getBoundingClientRect().top, 96);
+      el.style.maxHeight = `${Math.max(240, window.innerHeight - top - 12)}px`;
+    };
+    const queue = () => {
+      if (!frame) frame = requestAnimationFrame(fit);
+    };
+    fit();
+    window.addEventListener("scroll", queue, { passive: true });
+    window.addEventListener("resize", queue);
+    return () => {
+      window.removeEventListener("scroll", queue);
+      window.removeEventListener("resize", queue);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
   const updateQ = (v: string) => {
     setQ(v);
     clearTimeout(qTimer.current);
@@ -136,7 +160,7 @@ export default function Products() {
       ) : (
         <div className="mt-8 grid gap-8 lg:grid-cols-[260px_1fr]">
           <aside className="hidden lg:block" aria-label="Filters">
-            <div className="sticky top-24 -mr-2 max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain pr-2 pb-6 [scrollbar-width:thin]">{filterPanel}</div>
+            <div ref={filterBox} className="sticky top-24 -mr-2 max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain pr-2 pb-6 [scrollbar-width:thin]">{filterPanel}</div>
           </aside>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 max-lg:sticky max-lg:top-16 max-lg:z-20 max-lg:-mx-4 max-lg:border-b max-lg:border-line/70 max-lg:bg-paper/95 max-lg:px-4 max-lg:py-2 max-lg:backdrop-blur">

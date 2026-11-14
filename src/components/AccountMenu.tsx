@@ -2,18 +2,20 @@ import { Award, ClipboardList, LayoutDashboard, LogIn, LogOut, ShieldCheck, User
 import { AnimatePresence } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { staffSignedIn, useAccount } from "../lib/account";
+import type { AdminIdentity } from "../../shared/types";
+import { useAccount } from "../lib/account";
 import { m } from "./motion";
 
 /**
  * Account menu: customer sign-in / account, plus a discreet staff section.
  * Staff sign in on /admin with their mobile number and password.
  */
-export function AccountMenu({ dark }: { dark: boolean }) {
+export function AccountMenu({ dark, staff, onStaffSignOut }: { dark: boolean; staff: AdminIdentity | null; onStaffSignOut: () => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const { customer, logout } = useAccount();
   const ref = useRef<HTMLDivElement>(null);
-  const staff = staffSignedIn();
+  const staffName = staff ? staff.displayName || staff.email.split("@")[0] : "";
+  const shown = customer ? customer.name.trim().split(/\s+/)[0] : staffName.split(/\s+/)[0];
 
   useEffect(() => {
     if (!open) return;
@@ -37,20 +39,25 @@ export function AccountMenu({ dark }: { dark: boolean }) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={customer ? `Account menu for ${customer.name}` : "Account menu"}
-        title={customer ? customer.name : staff ? "Signed in as staff" : "Sign in"}
+        title={customer ? customer.name : staff ? `Signed in as ${staffName} (staff)` : "Sign in"}
         data-testid="account-menu"
-        className={`rounded-full p-2.5 transition ${dark ? "hover:bg-white/10" : "hover:bg-paper-2"}`}
+        className={`flex items-center gap-2 rounded-full transition ${customer || staff ? `py-1.5 pr-3 pl-1.5 ${dark ? "bg-white/10 hover:bg-white/15" : "bg-paper-2 hover:bg-line/60"}` : `p-2.5 ${dark ? "hover:bg-white/10" : "hover:bg-paper-2"}`}`}
       >
         {customer ? (
-          <span className="grid size-5 place-items-center rounded-full bg-verdi-500 text-[11px] font-bold text-white" data-testid="signed-in-badge">
+          <span className="grid size-6 place-items-center rounded-full bg-verdi-500 text-[11px] font-bold text-white" data-testid="signed-in-badge">
             {customer.name.trim()[0]?.toUpperCase()}
           </span>
         ) : staff ? (
-          <span className="grid size-5 place-items-center rounded-full bg-ink text-paper ring-1 ring-white/30" data-testid="staff-badge">
+          <span className="grid size-6 place-items-center rounded-full bg-ink text-paper ring-1 ring-white/30" data-testid="staff-badge">
             <ShieldCheck className="size-3.5" />
           </span>
         ) : (
           <UserRound className="size-5" />
+        )}
+        {(customer || staff) && (
+          <span className="max-w-[5.5rem] truncate text-sm font-medium" data-testid="signed-in-name">
+            {shown}
+          </span>
         )}
       </button>
       <AnimatePresence>
@@ -86,7 +93,7 @@ export function AccountMenu({ dark }: { dark: boolean }) {
                   <LogOut className="size-4 text-subtle" /> Sign out
                 </button>
               </>
-            ) : (
+            ) : staff ? null : (
               <>
                 <p className="px-3 pt-2 pb-1.5 font-mono text-[10px] tracking-[0.16em] text-subtle uppercase">Customers</p>
                 <Link role="menuitem" to="/account" className={item} onClick={() => setOpen(false)} data-testid="customer-signin-link">
@@ -97,11 +104,34 @@ export function AccountMenu({ dark }: { dark: boolean }) {
                 </Link>
               </>
             )}
-            <div className="my-1.5 border-t border-line" />
-            <p className="px-3 pt-1 pb-1.5 font-mono text-[10px] tracking-[0.16em] text-subtle uppercase">VERDI staff{staff ? " · signed in" : ""}</p>
+            {(customer || !staff) && <div className="my-1.5 border-t border-line" />}
+            {staff ? (
+              <div className="px-3 pt-2 pb-2">
+                <p className="truncate text-sm font-semibold">{staffName}</p>
+                <p className="flex items-center gap-1 text-xs text-muted">
+                  <ShieldCheck className="size-3.5 text-verdi-600" /> VERDI staff · {staff.role.replace("_", " ")}
+                </p>
+              </div>
+            ) : (
+              <p className="px-3 pt-1 pb-1.5 font-mono text-[10px] tracking-[0.16em] text-subtle uppercase">VERDI staff</p>
+            )}
             <a role="menuitem" href="/admin" className={item} data-testid="admin-signin-link">
               <LayoutDashboard className={`size-4 ${staff ? "text-verdi-600" : "text-subtle"}`} /> {staff ? "Admin dashboard" : "Staff / admin sign-in"}
             </a>
+            {staff && (
+              <button
+                type="button"
+                role="menuitem"
+                className={`${item} w-full`}
+                data-testid="staff-signout"
+                onClick={async () => {
+                  setOpen(false);
+                  await onStaffSignOut();
+                }}
+              >
+                <LogOut className="size-4 text-subtle" /> Sign out of admin
+              </button>
+            )}
           </m.div>
         )}
       </AnimatePresence>

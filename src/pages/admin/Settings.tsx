@@ -9,7 +9,7 @@ import { useAdmin } from "./AdminLayout";
 import { canManage, errorText, fieldErrors, PageHead, ReadOnlyNote, send } from "./kit";
 
 const FIELDS: { k: SiteSettingKey; label: string; hint?: string; area?: boolean; placeholder?: string }[] = [
-  { k: "announcement", label: "Announcement bar", hint: "Short message shown at the top of every page. Leave empty to hide.", placeholder: "e.g. New stock of TOPCon modules has arrived" },
+  { k: "announcement", label: "Announcement bar", hint: "Scrolling ribbon at the top of every page. Separate several messages with | . Leave empty to hide it.", placeholder: "e.g. New stock of TOPCon modules has arrived" },
   { k: "announcementLink", label: "Announcement link", hint: "Optional. A page on this site (e.g. /products) or a full https:// link." },
   { k: "contactPerson", label: "Contact person", placeholder: SITE.contactPerson },
   { k: "phone", label: "Phone number (for calls)", placeholder: "+91 89392 77997" },
