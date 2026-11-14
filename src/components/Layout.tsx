@@ -78,7 +78,7 @@ export function Layout() {
         Skip to content
       </a>
       <Announcement />
-      <header className={`sticky top-0 z-40 border-b backdrop-blur-xl ${isHome ? "border-white/10 bg-ink/85 text-paper" : "border-line/70 bg-paper/85"}`}>
+      <header className={`sticky top-0 z-40 border-b lg:backdrop-blur-md ${isHome ? "border-white/10 bg-ink/95 text-paper lg:bg-ink/85" : "border-line/70 bg-paper/95 lg:bg-paper/85"}`}>
         <div className="container-x flex h-16 items-center gap-2 sm:gap-4">
           <Link to="/" aria-label="VERDI SOLARR SOLUTION — home" className="shrink-0">
             <Logo dark={isHome} />

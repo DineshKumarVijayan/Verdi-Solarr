@@ -254,7 +254,31 @@ select::-ms-expand { display: none; }
 
 /* ---- Marquee ----------------------------------------------------------------- */
 @keyframes marquee { to { transform: translateX(-50%); } }
-.marquee-track { animation: marquee var(--marquee-duration, 40s) linear infinite; width: max-content; }
+.marquee-track { animation: marquee var(--marquee-duration, 40s) linear infinite; width: max-content; will-change: transform; }
+/* sections marked data-pause-offscreen freeze their loops while out of view (src/lib/offscreen.ts) */
+.anim-paused,
+.anim-paused * {
+  animation-play-state: paused !important;
+}
+/* edge fades drawn as fixed overlays (a CSS mask over moving content repaints every frame) */
+.fade-edges { position: relative; }
+.fade-edges::before,
+.fade-edges::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 8%;
+  pointer-events: none;
+}
+.fade-edges::before { left: 0; background: linear-gradient(90deg, var(--fade-to, var(--color-paper)), transparent); }
+.fade-edges::after { right: 0; background: linear-gradient(270deg, var(--fade-to, var(--color-paper)), transparent); }
+.float-y { animation: float-y var(--d, 5s) ease-in-out infinite; will-change: transform; }
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
 .marquee:hover .marquee-track { animation-play-state: paused; }
 
 /* ---- Hero light: rotating sun rays + dust motes -------------------------------- */
@@ -263,7 +287,23 @@ select::-ms-expand { display: none; }
   mask-image: radial-gradient(circle, #000 0%, transparent 62%);
   -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 62%);
   animation: spin 90s linear infinite;
-  mix-blend-mode: screen;
+  will-change: transform;
+}
+.sun-glow {
+  animation: sun-glow 6s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+@keyframes sun-glow {
+  0%, 100% { transform: scale(1); opacity: 0.75; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+/* hero off-screen: freeze every loop (no paint work while the rest of the page scrolls) */
+.hero-paused .sun-rays,
+.hero-paused .sun-glow,
+.hero-paused .mote,
+.hero-paused .hero-glint,
+.hero-paused .hero-sweep::before {
+  animation-play-state: paused;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes mote {
@@ -273,5 +313,5 @@ select::-ms-expand { display: none; }
 }
 .mote { animation: mote var(--d, 9s) ease-in-out infinite; animation-delay: var(--delay, 0s); }
 @media (prefers-reduced-motion: reduce) {
-  .marquee-track, .sun-rays, .mote { animation: none; }
+  .marquee-track, .sun-rays, .sun-glow, .mote, .float-y { animation: none; }
 }

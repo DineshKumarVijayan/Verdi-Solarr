@@ -1,6 +1,6 @@
 import { ArrowRight, Search } from "lucide-react";
 import { AnimatePresence, useMotionValue, useSpring, useTransform } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useCatalogue } from "../../lib/catalogue";
 import { useSite } from "../../lib/site";
@@ -73,6 +73,16 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
   const my = useMotionValue(0);
   const sx = useSpring(mx, { stiffness: 50, damping: 20 });
   const sy = useSpring(my, { stiffness: 50, damping: 20 });
+  // Looping light effects run only while the hero is on screen (saves work while scrolling the page).
+  const heroRef = useRef<HTMLElement>(null);
+  const [heroVisible, setHeroVisible] = useState(true);
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setHeroVisible(e.isIntersecting), { rootMargin: "0px 0px -15% 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   const bgX = useTransform(sx, (v) => v * -18);
   const bgY = useTransform(sy, (v) => v * -10);
   const cardX = useTransform(sx, (v) => v * 16);
@@ -81,7 +91,9 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
 
   return (
     <section
-      className="relative isolate flex min-h-[calc(100svh-4rem)] flex-col overflow-hidden bg-ink text-paper"
+      ref={heroRef}
+      data-pause-offscreen
+      className={`relative isolate flex min-h-[calc(100svh-4rem)] flex-col overflow-hidden bg-ink text-paper ${heroVisible ? "" : "hero-paused"}`}
       onPointerMove={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
         mx.set((e.clientX - r.left) / r.width - 0.5);
@@ -90,7 +102,7 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
     >
       {/* HD photograph: aerial solar farm at golden hour (mirrored so the sun sits behind the content's right side) */}
       <m.div className="absolute -inset-6 -z-30" style={{ x: bgX, y: bgY }}>
-        <m.picture initial={{ scale: 1.22, opacity: 0 }} animate={{ scale: 1.04, opacity: 1 }} transition={{ scale: { duration: 14, ease: [0.16, 1, 0.3, 1] }, opacity: { duration: 1.4 } }} className="block size-full">
+        <m.picture initial={{ scale: 1.22, opacity: 0 }} animate={{ scale: 1.04, opacity: 1 }} transition={{ scale: { duration: 2.4, ease: [0.16, 1, 0.3, 1] }, opacity: { duration: 1.4 } }} className="block size-full">
           <source media="(max-width: 640px)" srcSet="/media/hero-solar-farm-golden-1200.webp" />
           <img src="/media/hero-solar-farm-golden-2400.webp" alt="" fetchPriority="high" className="size-full -scale-x-100 object-cover object-[46%_center] sm:object-[center_60%]" />
         </m.picture>
@@ -98,18 +110,18 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
       {/* sun glow + rotating rays at the sun's position */}
       <div className="pointer-events-none absolute top-[24%] left-1/2 -z-20 size-[620px] -translate-x-1/2 -translate-y-1/2 sm:top-[27%] sm:left-[57%] sm:size-[900px]" aria-hidden="true">
         <div className="sun-rays absolute inset-0 rounded-full" />
-        <m.div className="absolute inset-[38%] rounded-full bg-[radial-gradient(circle,rgba(255,236,190,0.9),rgba(249,162,27,0.35)_45%,transparent_70%)] mix-blend-screen" animate={{ scale: [1, 1.15, 1], opacity: [0.75, 1, 0.75] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} />
+        <div className="sun-glow absolute inset-[38%] rounded-full bg-[radial-gradient(circle,rgba(255,236,190,0.9),rgba(249,162,27,0.35)_45%,transparent_70%)]" />
       </div>
       {/* panel glint sweep */}
-      <div className="pointer-events-none absolute inset-x-[20%] top-[66%] bottom-[4%] -z-20 overflow-hidden mix-blend-screen" aria-hidden="true">
+      <div className="pointer-events-none absolute inset-x-[20%] top-[66%] bottom-[4%] -z-20 overflow-hidden" aria-hidden="true">
         <div className="hero-glint absolute inset-0 opacity-80" />
       </div>
       {/* dust motes */}
-      <div className="pointer-events-none absolute inset-0 -z-20" aria-hidden="true">
+      <div className="pointer-events-none absolute inset-0 -z-20 hidden md:block" aria-hidden="true">
         {MOTES.map((p, i) => (
           <span
             key={i}
-            className="mote absolute rounded-full bg-sun-200/80 blur-[0.5px]"
+            className="mote absolute rounded-full bg-sun-200/80"
             style={{ left: p.left, top: p.top, width: p.size, height: p.size, ["--d" as string]: p.d, ["--delay" as string]: p.delay, ["--dx" as string]: p.dx }}
           />
         ))}
@@ -164,7 +176,7 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.25 }}
-              className="mt-6 flex max-w-xl items-center gap-2 rounded-full sm:mt-8 border border-white/20 bg-ink/40 p-1.5 pl-5 shadow-2xl backdrop-blur-xl focus-within:border-sun-300"
+              className="mt-6 flex max-w-xl items-center gap-2 rounded-full sm:mt-8 border border-white/20 bg-ink/75 p-1.5 pl-5 shadow-2xl focus-within:border-sun-300"
               role="search"
               onSubmit={(e) => {
                 e.preventDefault();
@@ -182,7 +194,7 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
             </m.form>
             <m.div className="scrollbar-none -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.4 }}>
               {quick.map((c) => (
-                <Link key={c.id} to={`/category/${c.slug}`} className="shrink-0 rounded-full border border-white/20 bg-ink/30 px-3 py-1 text-xs whitespace-nowrap text-paper/85 backdrop-blur transition hover:border-sun-300 hover:text-paper">
+                <Link key={c.id} to={`/category/${c.slug}`} className="shrink-0 rounded-full border border-white/20 bg-ink/60 px-3 py-1 text-xs whitespace-nowrap text-paper/85 transition hover:border-sun-300 hover:text-paper">
                   {c.name}
                 </Link>
               ))}
@@ -191,7 +203,7 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
               <Link to="/products" className="btn-sun">
                 Browse catalogue <ArrowRight className="size-4" />
               </Link>
-              <a href={SITE.whatsappUrl} target="_blank" rel="noopener" className="btn-ghost-dark backdrop-blur">
+              <a href={SITE.whatsappUrl} target="_blank" rel="noopener" className="btn-ghost-dark bg-ink/50">
                 <WhatsAppIcon className="size-4" /> WhatsApp {SITE.phoneDisplay}
               </a>
             </m.div>
@@ -200,7 +212,7 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
           {/* floating glass product card cycling through real product cut-outs */}
           {item && (
           <m.div style={{ x: cardX, y: cardY }} className="hidden justify-self-end xl:block" initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.2, duration: 0.9 }}>
-            <Link to={item.to} className="group block w-[340px] rounded-[2rem] border border-white/20 bg-white/10 p-5 shadow-2xl backdrop-blur-2xl transition hover:bg-white/15">
+            <Link to={item.to} className="group block w-[340px] rounded-[2rem] border border-white/20 bg-ink/70 p-5 shadow-2xl transition hover:bg-ink/80">
               <div className="relative h-56">
                 <div className="absolute inset-x-10 bottom-2 h-6 rounded-[50%] bg-black/40 blur-xl" />
                 <AnimatePresence mode="wait">
@@ -237,7 +249,7 @@ export function Hero({ stats }: { stats: { k: string; v: number }[] }) {
         </div>
       </div>
 
-      <div className="relative border-t border-white/10 bg-ink/50 backdrop-blur-md">
+      <div className="relative border-t border-white/10 bg-ink/85">
         <dl className="container-x grid grid-cols-4 divide-x divide-white/10">
           {stats.map((s) => (
             <div key={s.k} className="px-2 py-3 sm:px-6 sm:py-5">

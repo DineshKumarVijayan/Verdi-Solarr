@@ -77,7 +77,7 @@ export function CatalogueShowcase() {
 
   if (!active) return null;
   return (
-    <section className="relative overflow-hidden py-20" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+    <section className="relative overflow-hidden py-20" data-pause-offscreen onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
       <div className="container-x">
         <Reveal className="flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-2xl">
@@ -147,9 +147,11 @@ export function CatalogueShowcase() {
               </m.p>
             </AnimatePresence>
             {/* orbit ring */}
-            <m.div className="absolute top-1/2 right-[18%] size-[380px] -translate-y-1/2 rounded-full border border-dashed border-white/10" animate={{ rotate: 360 }} transition={{ duration: 60, repeat: Infinity, ease: "linear" }} aria-hidden="true">
-              <span className="absolute -top-1.5 left-1/2 size-3 rounded-full bg-sun-400 shadow-[0_0_18px_#f9a21b]" />
-            </m.div>
+            <div className="absolute top-1/2 right-[18%] size-[380px] -translate-y-1/2" aria-hidden="true">
+              <div className="size-full rounded-full border border-dashed border-white/10 will-change-transform motion-safe:animate-[spin_60s_linear_infinite]">
+                <span className="absolute -top-1.5 left-1/2 size-3 rounded-full bg-sun-400 shadow-[0_0_18px_#f9a21b]" />
+              </div>
+            </div>
 
             <div className="relative grid h-full gap-6 p-7 sm:p-10 md:grid-cols-[1fr_1.1fr]">
               <AnimatePresence mode="wait">
@@ -159,7 +161,7 @@ export function CatalogueShowcase() {
                   <p className="mt-3 max-w-sm text-paper/70">{active.description}</p>
                   <div className="mt-5 flex flex-wrap gap-2">
                     {chips.map((c, k) => (
-                      <m.span key={c} className="num rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs backdrop-blur" initial={{ opacity: 0, scale: 0.7, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: 0.15 + k * 0.08, type: "spring", stiffness: 260, damping: 18 }}>
+                      <m.span key={c} className="num rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs" initial={{ opacity: 0, scale: 0.7, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: 0.15 + k * 0.08, type: "spring", stiffness: 260, damping: 18 }}>
                         {c}
                       </m.span>
                     ))}
@@ -184,9 +186,9 @@ export function CatalogueShowcase() {
                         className="absolute inset-0 m-auto max-h-[78%] max-w-[62%] object-contain drop-shadow-[0_30px_40px_rgba(0,0,0,0.55)]"
                         style={{ zIndex: n - Math.abs(k - (n - 1) / 2) }}
                         initial={{ opacity: 0, x: 120, rotate: 12, scale: 0.8 }}
-                        animate={{ opacity: 1, x: `${offset}%`, rotate: (k - (n - 1) / 2) * 5, scale: k === Math.floor(n / 2) ? 1 : 0.86, y: [0, -10, 0] }}
+                        animate={{ opacity: 1, x: `${offset}%`, rotate: (k - (n - 1) / 2) * 5, scale: k === Math.floor(n / 2) ? 1 : 0.86 }}
                         exit={{ opacity: 0, x: -120, rotate: -10, scale: 0.8, transition: { duration: 0.35 } }}
-                        transition={{ type: "spring", stiffness: 90, damping: 16, delay: k * 0.08, y: { duration: 4 + k, repeat: Infinity, ease: "easeInOut" } }}
+                        transition={{ type: "spring", stiffness: 90, damping: 16, delay: k * 0.08 }}
                       />
                     ) : (
                       <m.div
@@ -194,9 +196,9 @@ export function CatalogueShowcase() {
                         className="absolute inset-0 m-auto h-[78%] w-[86%] overflow-hidden rounded-3xl border border-white/15 shadow-2xl"
                         style={{ zIndex: k + 1 }}
                         initial={{ opacity: 0, x: 120, rotate: 8 }}
-                        animate={{ opacity: 1, x: `${offset * 0.6}%`, rotate: n > 1 ? (k ? 4 : -4) : -3, y: [0, -8, 0] }}
+                        animate={{ opacity: 1, x: `${offset * 0.6}%`, rotate: n > 1 ? (k ? 4 : -4) : -3 }}
                         exit={{ opacity: 0, x: -120, transition: { duration: 0.35 } }}
-                        transition={{ type: "spring", stiffness: 90, damping: 16, delay: k * 0.1, y: { duration: 5, repeat: Infinity, ease: "easeInOut" } }}
+                        transition={{ type: "spring", stiffness: 90, damping: 16, delay: k * 0.1 }}
                       >
                         <img src={v.src} alt="" loading="lazy" className="size-full object-cover" />
                         <div className="hero-glint absolute inset-0" />
@@ -211,7 +213,7 @@ export function CatalogueShowcase() {
 
         {/* BOS marquee */}
         {upcoming.length > 0 && (
-          <Reveal className="marquee mt-8 overflow-hidden rounded-2xl border border-line bg-card py-4 [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]">
+          <Reveal className="marquee fade-edges mt-8 overflow-hidden rounded-2xl border border-line bg-card py-4 [--fade-to:var(--color-card)]">
             <div className="marquee-track flex gap-3" style={{ ["--marquee-duration" as string]: "38s" }}>
               {[...upcoming, ...upcoming].map((c, k) => (
                 <Link key={k} to={`/category/${c.slug}`} className="chip shrink-0 !px-4 !py-2 !text-sm transition hover:-translate-y-0.5 hover:!border-verdi-500" tabIndex={k >= upcoming.length ? -1 : 0} aria-hidden={k >= upcoming.length}>

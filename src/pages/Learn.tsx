@@ -69,7 +69,7 @@ export default function Learn() {
       </section>
 
       {/* filters */}
-      <div className="sticky top-16 z-30 border-b border-line/70 bg-paper/90 backdrop-blur">
+      <div className="sticky top-16 z-30 border-b border-line/70 bg-paper">
         <div className="container-x flex flex-wrap items-center gap-2 py-3">
           <div className="scrollbar-none flex flex-1 gap-1.5 overflow-x-auto" role="tablist" aria-label="Lesson topics">
             {[{ id: "all", name: "All lessons" }, ...GROUPS].map((g) => (

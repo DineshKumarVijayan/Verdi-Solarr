@@ -16,7 +16,7 @@ export function MobileTabBar() {
   const tab = "flex flex-1 flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] font-medium";
   const navCls = ({ isActive }: { isActive: boolean }) => `${tab} ${isActive ? "text-verdi-700" : "text-muted"}`;
   return (
-    <nav aria-label="Quick navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden" data-testid="tab-bar">
+    <nav aria-label="Quick navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] lg:hidden" data-testid="tab-bar">
       <div className="mx-auto flex max-w-lg items-stretch">
         <NavLink to="/" end className={navCls}>
           <Home className="size-5" /> Home
