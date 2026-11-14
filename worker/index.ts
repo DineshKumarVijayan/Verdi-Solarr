@@ -6,6 +6,7 @@ import { RevalidateSchema } from "../shared/schemas";
 import type { AdminIdentity } from "../shared/types";
 import { dashboard, listPrices, priceHistory, updatePrice } from "./admin";
 import { adminLogin, adminLogout, assertSameOrigin, requireAdmin } from "./auth";
+import * as quotes from "./quotations";
 import { handleCatalogue, revalidate } from "./catalogue";
 import { productPage, robots, sitemap } from "./seo";
 import * as content from "./content";
@@ -44,6 +45,11 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     return json({ ok: true, time: new Date().toISOString() });
   }
 
+  if (path.startsWith("/api/q/") && method === "GET") {
+    await rateLimit(env.PUBLIC_LIMITER, `quote:${ip}`);
+    return quotes.servePdf(env, path.slice("/api/q/".length));
+  }
+
   if (path === "/api/catalogue" && (method === "GET" || method === "HEAD")) {
     return handleCatalogue(request, env, ctx);
   }
@@ -80,6 +86,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     // Phase 2: admin-uploaded images/datasheets stored in R2 (read-only, public).
     const key = decodeURIComponent(path.slice("/api/media/".length));
     if (!R2_KEY.test(key) || key.includes("..")) throw new HttpError(400, "bad_key", "Invalid media key.");
+    if (key.startsWith("quote/")) throw new HttpError(404, "not_found", "Not found."); // quotations only via /api/q/<token>
     if (!env.MEDIA) throw new HttpError(404, "not_found", "Media storage not configured.");
     // Keys are random and never reused, so files are immutable: cache at the edge and in the browser.
     let cache: Cache | null = null;
@@ -199,6 +206,17 @@ async function adminContent(request: Request, env: Env, admin: AdminIdentity, pa
       if (id && seg.length === 2 && method === "PUT") return json(await content.setCustomerActive(env, admin, id, await body()));
       if (id && sub === "points" && seg.length === 3 && method === "POST") return json(await content.adjustPoints(env, admin, id, await body()));
       if (id && sub === "reset-link" && seg.length === 3 && method === "POST") return json(await content.customerResetLink(env, admin, id, url.origin));
+      break;
+    case "quotations":
+      if (seg[1] === "settings" && seg.length === 2 && method === "GET") return json({ settings: await quotes.getQuoteSettings(env) });
+      if (seg[1] === "settings" && seg.length === 2 && method === "PUT") return json({ settings: await quotes.saveQuoteSettings(env, admin, await body()) });
+      if (seg.length === 1 && method === "GET") return json(await quotes.listQuotations(env, url));
+      if (seg.length === 1 && method === "POST") return json({ quote: await quotes.createQuotation(env, admin, await body(128 * 1024)) }, { status: 201 });
+      if (id && seg.length === 2 && method === "GET") return json({ quote: await quotes.getQuotation(env, id) });
+      if (id && seg.length === 2 && method === "PUT") return json({ quote: await quotes.updateQuotation(env, admin, id, await body(128 * 1024)) });
+      if (id && seg.length === 2 && method === "DELETE") return json(await quotes.deleteQuotation(env, admin, id));
+      if (id && sub === "status" && seg.length === 3 && method === "PUT") return json({ quote: await quotes.setQuotationStatus(env, admin, id, await body()) });
+      if (id && sub === "pdf" && seg.length === 3 && method === "POST") return json(await quotes.shareQuotationPdf(env, admin, id, request));
       break;
     case "enquiries":
       if (seg.length === 1 && method === "GET") return json(await content.listEnquiries(env, url));

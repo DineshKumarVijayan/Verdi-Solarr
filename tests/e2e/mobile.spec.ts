@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const path of ["/", "/in-the-field", "/products", "/products/anchor-ino-residential-single-phase-pv-inverter-5ktlx", "/enquiry", "/learn", "/solar-tools/kit-builder", "/compare", "/admin/prices", "/solar-panels-chennai", "/account"]) {
+for (const path of ["/", "/in-the-field", "/products", "/products/anchor-ino-residential-single-phase-pv-inverter-5ktlx", "/enquiry", "/learn", "/solar-tools/kit-builder", "/compare", "/admin/prices", "/admin/quotations", "/admin/quotations/new", "/solar-panels-chennai", "/account"]) {
   test(`no horizontal overflow on mobile: ${path}`, async ({ page }) => {
     await page.goto(path);
     await page.waitForLoadState("networkidle");

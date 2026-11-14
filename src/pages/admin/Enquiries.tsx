@@ -1,4 +1,4 @@
-import { Award, ChevronDown, Phone, Search, UserRound } from "lucide-react";
+import { Award, ChevronDown, FileText, Phone, Search, UserRound } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { formatMobile, normaliseMobile } from "../../../shared/admin-schemas";
@@ -158,6 +158,9 @@ function EnquiryRow({ e, open, onToggle, onSaved }: { e: AdminEnquiryRow; open: 
               <a className="btn-ghost btn-sm" target="_blank" rel="noopener" href={`https://wa.me/${mobile ?? e.mobile.replace(/\D/g, "")}?text=${encodeURIComponent(`Hello ${e.contactName}, this is VERDI SOLARR SOLUTION regarding your enquiry ${e.reference}.`)}`}>
                 <WhatsAppIcon className="size-3.5" /> WhatsApp
               </a>
+              <Link className="btn-ghost btn-sm" to="/admin/quotations/new" state={{ enquiry: e }} data-testid="enquiry-to-quote">
+                <FileText className="size-3.5" /> Create quotation
+              </Link>
               {e.customerId && (
                 <Link className="btn-ghost btn-sm" to={`/admin/customers?open=${e.customerId}`}>
                   <UserRound className="size-3.5" /> Customer account

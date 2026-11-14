@@ -1,4 +1,4 @@
-import { ClipboardList, Images, LayoutDashboard, Layers, LockKeyhole, LogOut, Package, Settings, ShieldAlert, ShieldCheck, Tags, Users } from "lucide-react";
+import { ClipboardList, FileText, Images, LayoutDashboard, Layers, LockKeyhole, LogOut, Package, Settings, ShieldAlert, ShieldCheck, Tags, Users } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useState, type FormEvent } from "react";
 import { NavLink, Outlet } from "react-router";
 import type { AdminIdentity } from "../../../shared/types";
@@ -13,6 +13,7 @@ const NAV = [
   { to: "/admin/catalogue", label: "Brands & categories", icon: Layers },
   { to: "/admin/field-photos", label: "Field photos", icon: Images },
   { to: "/admin/enquiries", label: "Enquiries", icon: ClipboardList },
+  { to: "/admin/quotations", label: "Quotations", icon: FileText },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/settings", label: "Settings", icon: Settings },
   { to: "/admin/users", label: "Admin users", icon: ShieldCheck, owner: true },

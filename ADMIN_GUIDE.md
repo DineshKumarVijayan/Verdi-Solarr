@@ -63,6 +63,21 @@ Every enquiry sent from the basket is saved with a reference number (e.g. `VS-26
 - Open an enquiry to see the items, call or WhatsApp the customer, set the **status** (Received → Contacted → Quoted → Order confirmed / Closed / Cancelled) and keep **internal notes**. Customers never see the notes.
 - For registered customers you can credit **reward points** right there.
 
+## Quotations
+Any admin (every role) can prepare quotations under **Quotations**. On an enquiry you can also click **Create quotation**, which fills in the customer details and products.
+1. **New quotation**: enter the customer name. Mobile number, email, company and address are optional.
+2. **Add products**: search the catalogue. Unit prices come from the catalogue and cannot be changed here; change them under Prices. Only products without a listed price, and **Custom lines**, take a typed price.
+3. **Add a discount** to any line if needed: **%** or **₹ off**. Totals update as you type.
+4. **Preview PDF** saves the quotation and shows the PDF. From the preview you can:
+   - **Download PDF**, to send it yourself (email, your own WhatsApp, print);
+   - **Share PDF** (phones), which attaches the file to WhatsApp, Gmail or any app;
+   - **WhatsApp to customer**, which opens a chat with the customer and a ready message containing a private link to the PDF. The quotation is then marked as **Sent**.
+5. Set the status (Draft, Sent, Accepted, Declined) from the dropdown at the top right of the quotation.
+
+Prices are copied onto the quotation when it is saved. Later catalogue price changes do not alter an existing quotation.
+
+**PDF details** (owner and admin roles): GSTIN, default validity, signatory name, terms and bank or UPI details. These are printed on every PDF but are not shown on the public website.
+
 ## Customers & reward points
 Customers create their own accounts (mobile number + password) under the person icon → **Create an account**. They see their enquiry history, status and points under **My account**. Customer accounts are completely separate from admin access.
 - **Reward points:** open a customer → enter `+500` (credit) or `-200` (redeem) with a reason. The customer sees the reason in their history. The balance can’t go below zero.

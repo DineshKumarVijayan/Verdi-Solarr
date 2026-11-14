@@ -33,6 +33,7 @@ const AdminEnquiries = lazy(() => import("./pages/admin/Enquiries"));
 const AdminCustomers = lazy(() => import("./pages/admin/Customers"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const AdminUsers = lazy(() => import("./pages/admin/Users"));
+const AdminQuotations = lazy(() => import("./pages/admin/Quotations"));
 const Account = lazy(() => import("./pages/Account"));
 const AccountReset = lazy(() => import("./pages/Account").then((m) => ({ default: m.AccountReset })));
 
@@ -104,6 +105,8 @@ export const router = createBrowserRouter([
               { path: "catalogue", element: <Page><AdminCatalog /></Page> },
               { path: "field-photos", element: <Page><AdminFieldPhotos /></Page> },
               { path: "enquiries", element: <Page><AdminEnquiries /></Page> },
+              { path: "quotations", element: <Page><AdminQuotations /></Page> },
+              { path: "quotations/:id", element: <Page><AdminQuotations /></Page> },
               { path: "customers", element: <Page><AdminCustomers /></Page> },
               { path: "settings", element: <Page><AdminSettings /></Page> },
               { path: "users", element: <Page><AdminUsers /></Page> },
