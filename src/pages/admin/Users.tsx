@@ -69,8 +69,8 @@ export default function Users() {
           <Spinner />
         </div>
       ) : (
-        <div className="card mt-6 overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-sm">
+        <div className="card mt-6 md:overflow-x-auto">
+          <table className="rtable w-full text-left text-sm md:min-w-[640px]">
             <thead className="border-b border-line text-xs text-muted">
               <tr>
                 <th className="p-3 font-medium">Staff member</th>
@@ -83,7 +83,7 @@ export default function Users() {
             <tbody>
               {users.map((u) => (
                 <tr key={u.id} className="border-b border-line/60 last:border-0" data-testid="admin-user-row">
-                  <td className="p-3">
+                  <td className="rt-title p-3">
                     <p className="font-semibold">{u.displayName || (u.mobile ? formatMobile(u.mobile) : u.email)}</p>
                     <p className="text-xs text-muted">
                       {[u.mobile ? formatMobile(u.mobile) : "no mobile set", u.email || null].filter(Boolean).join(" · ")}
@@ -91,12 +91,12 @@ export default function Users() {
                     </p>
                     {u.mustChangePassword && <p className="mt-1 inline-block rounded-full bg-sun-100 px-2 py-0.5 text-[11px] font-medium text-ink" data-testid="temp-password-badge">Temporary password · must set their own at next sign-in</p>}
                   </td>
-                  <td className="p-3">{ROLES.find((r) => r.v === u.role)?.label}</td>
-                  <td className="p-3">
+                  <td className="rt-chip p-3">{ROLES.find((r) => r.v === u.role)?.label}</td>
+                  <td className="rt-chip p-3">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${u.isActive ? "bg-verdi-100 text-verdi-800" : "bg-paper-3 text-muted"}`}>{u.isActive ? "Active" : "Disabled"}</span>
                   </td>
-                  <td className="p-3 text-xs text-muted">{dt(u.lastLoginAt)}</td>
-                  <td className="p-3 text-right">
+                  <td className="p-3 text-xs text-muted" data-label="Last sign-in:">{dt(u.lastLoginAt)}</td>
+                  <td className="rt-actions p-3 text-right">
                     <button type="button" className="rounded-full p-2 text-muted hover:bg-paper-2" aria-label={`Edit ${u.displayName || u.mobile || u.email}`} onClick={() => (setErrs({}), setEdit({ id: u.id, email: u.email, mobile: u.mobile ? formatMobile(u.mobile) : "", password: "", displayName: u.displayName ?? "", role: u.role, isActive: u.isActive }))}>
                       <Pencil className="size-4" />
                     </button>

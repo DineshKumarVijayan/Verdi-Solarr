@@ -57,8 +57,8 @@ export default function Customers() {
       ) : rows.length === 0 ? (
         <p className="mt-10 text-center text-muted">No customer accounts yet.</p>
       ) : (
-        <div className="card mt-6 overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left text-sm">
+        <div className="card mt-6 md:overflow-x-auto">
+          <table className="rtable w-full text-left text-sm md:min-w-[720px]">
             <thead className="border-b border-line text-xs text-muted">
               <tr>
                 <th className="p-3 font-medium">Customer</th>
@@ -72,18 +72,21 @@ export default function Customers() {
             <tbody>
               {rows.map((c) => (
                 <tr key={c.id} className="cursor-pointer border-b border-line/60 last:border-0 hover:bg-paper" onClick={() => setOpen(c.id)} data-testid="admin-customer-row">
-                  <td className="p-3">
+                  <td className="rt-title p-3">
                     <button type="button" className="text-left font-semibold hover:underline">
                       {c.name}
                     </button>
                     {!c.isActive && <span className="ml-2 rounded-full bg-paper-3 px-2 py-0.5 text-[10px] text-muted">disabled</span>}
                     <p className="text-xs text-muted">{[c.business, c.city].filter(Boolean).join(" · ")}</p>
                   </td>
-                  <td className="num p-3">{formatMobile(c.mobile)}</td>
-                  <td className="num p-3 text-right">{c.enquiries}</td>
-                  <td className="num p-3 text-right font-semibold">{c.points.toLocaleString("en-IN")}</td>
-                  <td className="p-3 text-xs text-muted">{dt(c.createdAt)}</td>
-                  <td className="p-3 text-xs text-muted">{dt(c.lastLoginAt)}</td>
+                  <td className="num p-3 max-md:text-xs max-md:text-muted">{formatMobile(c.mobile)}</td>
+                  <td className="rt-chip num p-3 text-right" data-label="Enquiries">{c.enquiries}</td>
+                  <td className="rt-aside num p-3 text-right font-semibold" data-label="Points">
+                    {c.points.toLocaleString("en-IN")}
+                    <span className="text-[11px] font-normal text-muted md:hidden"> pts</span>
+                  </td>
+                  <td className="rt-chip p-3 text-xs text-muted" data-label="Joined">{dt(c.createdAt)}</td>
+                  <td className="rt-hide p-3 text-xs text-muted">{dt(c.lastLoginAt)}</td>
                 </tr>
               ))}
             </tbody>

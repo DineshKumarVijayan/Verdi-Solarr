@@ -47,3 +47,21 @@ test.describe("360 px phone, signed in", () => {
     });
   }
 });
+
+// Admin lists on phones are cards: nothing hidden in a sideways-scrolling box (price, status, edit visible).
+for (const path of ["/admin/products", "/admin/prices", "/admin/customers", "/admin/users"]) {
+  test(`admin list shows everything without sideways scrolling: ${path}`, async ({ page }) => {
+    await page.goto(path);
+    await page.waitForLoadState("networkidle");
+    const hidden = await page.evaluate(() =>
+      [...document.querySelectorAll("main *")].filter((el) => {
+        const o = getComputedStyle(el).overflowX;
+        return (o === "auto" || o === "scroll") && el.scrollWidth > el.clientWidth + 2 && !el.closest('nav[aria-label="Admin"]') && !String(el.className).includes("scrollbar-none");
+      }).length,
+    );
+    expect(hidden).toBe(0);
+    const firstRow = page.locator("table.rtable tbody tr").first();
+    const box = await firstRow.boundingBox();
+    expect(box!.x + box!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
+  });
+}

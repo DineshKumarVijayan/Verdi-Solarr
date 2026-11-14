@@ -116,8 +116,8 @@ export default function Prices() {
       {rows && (
         <>
           <p className="num mt-4 text-xs text-muted">{total} products</p>
-          <div className="card relative mt-2 overflow-x-auto">
-            <table className="w-full min-w-[760px] text-sm">
+          <div className="card relative mt-2 md:overflow-x-auto">
+            <table className="rtable w-full text-sm md:min-w-[760px]">
               <thead className="bg-paper-2/70 text-left text-xs text-muted">
                 <tr>
                   <th className="p-3 font-semibold">Product</th>
@@ -133,24 +133,24 @@ export default function Prices() {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.productId} className="border-t border-line/70 align-top" data-testid="admin-price-row">
-                    <td className="p-3">
+                    <td className="rt-title p-3">
                       <p className="font-medium">{r.name}</p>
                       <p className="num text-xs text-muted">
                         {r.sku} · {r.brand} · {r.category}
                         {!r.isActive && <span className="ml-1 rounded bg-paper-3 px-1">archived</span>}
                       </p>
                     </td>
-                    <td className="num p-3">
+                    <td className="rt-aside num p-3">
                       {r.sellingPaise === null ? <span className="text-sun-600">Not set</span> : formatPaise(r.sellingPaise)}
                       <span className="block text-[11px] text-subtle">{r.unit}</span>
                     </td>
-                    <td className="num p-3">{r.mrpPaise === null ? "—" : formatPaise(r.mrpPaise)}</td>
-                    <td className="p-3 text-xs">{gstLabel(r)}</td>
-                    <td className="p-3 text-xs text-muted">
+                    <td className="rt-chip num p-3" data-label="MRP">{r.mrpPaise === null ? "—" : formatPaise(r.mrpPaise)}</td>
+                    <td className="rt-chip p-3 text-xs">{gstLabel(r)}</td>
+                    <td className="p-3 text-xs text-muted" data-label="Last change:">
                       {r.updatedBy === "seed" ? "Imported" : r.updatedBy}
-                      <span className="block">{dt(r.updatedAt)}</span>
+                      <span className="md:block"><span className="md:hidden"> · </span>{dt(r.updatedAt)}</span>
                     </td>
-                    <td className="p-3 text-right">
+                    <td className="rt-actions p-3 text-right">
                       <button type="button" className="btn-ghost btn-sm" onClick={() => setEditing(r)} aria-label={`${canEdit ? "Edit" : "View"} price for ${r.name}`}>
                         {canEdit ? <Pencil className="size-3.5" /> : <History className="size-3.5" />} {canEdit ? "Edit" : "History"}
                       </button>

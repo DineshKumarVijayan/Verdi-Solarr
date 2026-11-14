@@ -110,8 +110,8 @@ export default function AdminProducts() {
       ) : (
         <>
           <p className="mt-4 text-xs text-muted">{rows.length} product(s)</p>
-          <div className="card mt-2 overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
+          <div className="card mt-2 md:overflow-x-auto">
+            <table className="rtable w-full text-left text-sm md:min-w-[760px]">
               <thead className="border-b border-line text-xs text-muted">
                 <tr>
                   <th className="p-3 font-medium">Product</th>
@@ -125,7 +125,7 @@ export default function AdminProducts() {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.id} className="border-b border-line/60 last:border-0 hover:bg-paper" data-testid="admin-product-row">
-                    <td className="p-3">
+                    <td className="rt-title p-3">
                       <Link to={`/admin/products/${r.id}`} className="font-semibold hover:underline">
                         {r.name}
                       </Link>
@@ -136,11 +136,12 @@ export default function AdminProducts() {
                     </td>
                     <td className="p-3 text-xs text-muted">
                       {r.brand}
-                      <br />
+                      <br className="max-md:hidden" />
+                      <span className="md:hidden"> · </span>
                       {r.category}
                     </td>
-                    <td className="num p-3 text-right">{r.sellingPaise != null ? formatPaise(r.sellingPaise) : <span className="text-xs text-subtle">not set</span>}</td>
-                    <td className="p-3">
+                    <td className="rt-aside num p-3 text-right">{r.sellingPaise != null ? formatPaise(r.sellingPaise) : <span className="text-xs font-normal text-subtle">Price not set</span>}</td>
+                    <td className="rt-chip p-3">
                       <span className={`mr-2 inline-flex items-center gap-1 text-xs ${r.images ? "text-ink" : "text-subtle"}`} title="Images">
                         <ImageIcon className="size-3.5" />
                         {r.images}
@@ -150,14 +151,14 @@ export default function AdminProducts() {
                         {r.hasDatasheet ? "PDF" : "—"}
                       </span>
                     </td>
-                    <td className="p-3">
+                    <td className="rt-chip p-3">
                       <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${r.isActive ? "bg-verdi-100 text-verdi-800" : "bg-paper-3 text-muted"}`}>
                         {r.isActive ? <Eye className="size-3" /> : <EyeOff className="size-3" />}
                         {r.isActive ? "Visible" : "Hidden"}
                       </span>
                       {r.isFeatured && <Star className="ml-1 inline size-3.5 fill-sun-400 text-sun-400" aria-label="Featured" />}
                     </td>
-                    <td className="p-3 text-right whitespace-nowrap">
+                    <td className="rt-actions p-3 text-right whitespace-nowrap">
                       <Link to={`/admin/products/${r.id}`} className="inline-flex rounded-full p-2 text-muted hover:bg-paper-2 hover:text-ink" aria-label={`Edit ${r.name}`}>
                         <Pencil className="size-4" />
                       </Link>

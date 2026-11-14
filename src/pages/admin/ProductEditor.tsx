@@ -451,8 +451,8 @@ export default function ProductEditor() {
                 <option key={k} value={k} />
               ))}
             </datalist>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-sm" data-testid="spec-table">
+            <div className="md:overflow-x-auto">
+              <table className="rtable rtable-form w-full text-sm md:min-w-[640px]" data-testid="spec-table">
                 <thead className="text-left text-xs text-muted">
                   <tr>
                     <th className="pb-2 font-medium">Group</th>
@@ -466,10 +466,10 @@ export default function ProductEditor() {
                 <tbody>
                   {f.specs.map((s, i) => (
                     <tr key={i} className="align-top">
-                      <td className="pr-1.5 pb-1.5">
+                      <td className="pr-1.5 pb-1.5" data-label="Group">
                         <input aria-label={`Group, row ${i + 1}`} className="field !px-2 !py-1.5" value={s.group} disabled={!editable} onChange={(e) => setSpec(i, { group: e.target.value })} />
                       </td>
-                      <td className="pr-1.5 pb-1.5">
+                      <td className="pr-1.5 pb-1.5" data-label="Label">
                         <input
                           aria-label={`Label, row ${i + 1}`}
                           className="field !px-2 !py-1.5"
@@ -478,13 +478,13 @@ export default function ProductEditor() {
                           onChange={(e) => setSpec(i, { label: e.target.value, ...(s.key && s.key !== specKeyFrom(s.label) ? {} : { key: specKeyFrom(e.target.value) }) })}
                         />
                       </td>
-                      <td className="pr-1.5 pb-1.5">
+                      <td className="pr-1.5 pb-1.5" data-label="Value">
                         <input aria-label={`Value, row ${i + 1}`} className="field !px-2 !py-1.5" value={s.value} disabled={!editable} onChange={(e) => setSpec(i, { value: e.target.value })} />
                       </td>
-                      <td className="w-24 pr-1.5 pb-1.5">
+                      <td className="w-24 pr-1.5 pb-1.5" data-label="Unit">
                         <input aria-label={`Unit, row ${i + 1}`} className="field !px-2 !py-1.5" value={s.unit ?? ""} disabled={!editable} onChange={(e) => setSpec(i, { unit: e.target.value })} />
                       </td>
-                      <td className="w-40 pr-1.5 pb-1.5">
+                      <td className="w-40 pr-1.5 pb-1.5" data-label="Field key">
                         <input
                           aria-label={`Field key, row ${i + 1}`}
                           list="spec-keys"
@@ -498,7 +498,7 @@ export default function ProductEditor() {
                           }}
                         />
                       </td>
-                      <td className="pb-1.5 whitespace-nowrap">
+                      <td className="rt-actions pb-1.5 whitespace-nowrap">
                         {editable && (
                           <>
                             <button type="button" className="rounded p-1.5 text-subtle hover:text-ink" onClick={() => moveSpec(i, -1)} aria-label={`Move row ${i + 1} up`}>

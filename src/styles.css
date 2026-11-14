@@ -315,3 +315,92 @@ select::-ms-expand { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .marquee-track, .sun-rays, .sun-glow, .mote, .float-y { animation: none; }
 }
+
+/* ---- Responsive tables -------------------------------------------------------
+   Phones (< 768 px): each <tr> of a table.rtable becomes a compact card, so nothing hides
+   off to the right. Mark cells with:
+     rt-title   main text (left, first line)
+     rt-aside   key figure shown at the right of the title (e.g. price)
+     rt-chip    small inline item (status, counts); data-label adds a muted prefix
+     rt-actions buttons, bottom-right
+   other cells take a full line (data-label adds a muted prefix).
+   table.rtable.rtable-form: editable rows; cells become labelled fields, two per line. */
+@media (max-width: 767.98px) {
+  table.rtable {
+    min-width: 0 !important;
+    display: block;
+  }
+  table.rtable thead {
+    display: none;
+  }
+  table.rtable tbody {
+    display: block;
+  }
+  table.rtable tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.75rem;
+    padding: 0.85rem 1rem;
+  }
+  table.rtable td {
+    display: block;
+    flex: 1 0 100%;
+    min-width: 0;
+    padding: 0 !important;
+    text-align: left !important;
+    width: auto !important;
+    order: 1;
+  }
+  table.rtable td.rt-hide {
+    display: none;
+  }
+  table.rtable td[data-label]::before {
+    content: attr(data-label) " ";
+    color: var(--color-subtle);
+    font-size: 0.72rem;
+  }
+  table.rtable td.rt-title {
+    /* title + aside always fill the first line; chips start on a line of their own */
+    flex: 1 1 calc(100% - 8rem);
+    order: -2;
+  }
+  table.rtable td.rt-aside {
+    flex: 0 0 auto;
+    order: -1;
+    text-align: right !important;
+    font-weight: 600;
+  }
+  table.rtable td.rt-aside[data-label]::before {
+    display: none;
+  }
+  table.rtable td.rt-chip {
+    flex: 0 0 auto;
+    font-size: 0.78rem;
+    order: 2;
+  }
+  table.rtable td.rt-actions {
+    flex: 0 0 auto;
+    margin-left: auto;
+    order: 3;
+  }
+  /* editable rows (specifications) */
+  table.rtable.rtable-form tr {
+    align-items: flex-end;
+    border: 1px solid var(--color-line);
+    border-radius: 1rem;
+    margin-bottom: 0.6rem;
+    padding: 0.75rem;
+  }
+  table.rtable.rtable-form td {
+    flex: 1 1 calc(50% - 0.5rem);
+  }
+  table.rtable.rtable-form td[data-label]::before {
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+  table.rtable.rtable-form td.rt-actions {
+    flex: 1 0 100%;
+    text-align: right !important;
+  }
+}
