@@ -65,3 +65,15 @@ for (const path of ["/admin/products", "/admin/prices", "/admin/customers", "/ad
     expect(box!.x + box!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
   });
 }
+
+// Pages must actually render (a blank page passes width checks): heading visible, no script errors.
+for (const path of ["/", "/products", "/products/anchor-ino-residential-single-phase-pv-inverter-5ktlx", "/enquiry", "/account"]) {
+  test(`renders without script errors: ${path}`, async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    page.on("console", (m) => m.type() === "error" && /Content Security Policy|Uncaught|preamble/i.test(m.text()) && errors.push(m.text()));
+    await page.goto(path);
+    await expect(page.locator("h1").first()).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+}

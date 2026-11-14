@@ -130,7 +130,12 @@ export async function productPage(request: Request, env: Env, ctx: ExecutionCont
     .transform(asset);
   const out = new Response(res.body, res);
   out.headers.set("Cache-Control", "public, max-age=0, must-revalidate"); // price in the tags must stay current
-  for (const [k, v] of Object.entries(PAGE_SECURITY_HEADERS)) out.headers.set(k, v);
+  for (const [k, v] of Object.entries(PAGE_SECURITY_HEADERS)) {
+    // The local dev server injects an inline start-up script (React refresh) that a strict CSP
+    // blocks, leaving a blank page. Production builds have no inline scripts, so the CSP stays there.
+    if (k === "Content-Security-Policy" && env.ENVIRONMENT === "development") continue;
+    out.headers.set(k, v);
+  }
   out.headers.delete("ETag");
   return out;
 }
